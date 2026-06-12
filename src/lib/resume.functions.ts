@@ -104,20 +104,18 @@ export const generateResume = createServerFn({ method: "POST" })
     (d: {
       name: string;
       targetRole: string;
-      experience: string;
-      skills: string;
-      projects: string;
-      education: string;
+      rawDetails: string;
+      template: string;
     }) => d,
   )
   .handler(async ({ data }): Promise<Resume> => {
     const prompt = `Build a premium AI-generated resume tailored to the target role.
 Target role: ${data.targetRole}
 Candidate name: ${data.name}
-Raw experience: ${data.experience}
-Raw skills: ${data.skills}
-Raw projects: ${data.projects}
-Raw education: ${data.education}
+Template style: ${data.template} (If 'Detailed', provide very descriptive bullets. If 'Simple', keep it concise).
+
+Raw candidate details (extract all experience, skills, projects, education from here):
+${data.rawDetails}
 
 JSON shape (every field required, infer/expand where missing):
 {
@@ -212,8 +210,15 @@ If any field is missing or cannot be inferred, provide a sensible default placeh
   let cleaned = text.trim();
   const htmlBlockMatch = cleaned.match(/```html([\s\S]*?)```/i) || cleaned.match(/```([\s\S]*?)```/i);
   if (htmlBlockMatch) {
-    return htmlBlockMatch[1].trim();
+    cleaned = htmlBlockMatch[1].trim();
   }
+  
+  const lower = cleaned.toLowerCase();
+  if (!lower.includes("<html") && !lower.includes("<body") && !lower.includes("<div") && !lower.includes("<main") && !lower.includes("<section") && !lower.includes("<header")) {
+    console.error("[extractHtml] Failed to find HTML tags in AI output:", cleaned.slice(0, 300));
+    throw new Error("AI failed to return valid HTML. Please try again or check API keys.");
+  }
+  
   return cleaned;
 }
 

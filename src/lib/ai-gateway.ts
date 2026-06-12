@@ -2,9 +2,57 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { createAnthropic } from "@ai-sdk/anthropic";
 import { createCohere } from "@ai-sdk/cohere";
-import { generateText as originalGenerateText, streamText as originalStreamText } from "ai";
+import fs from "fs";
+import path from "path";
+import { generateText as originalGenerateText, streamText as originalStreamText, generateObject as originalGenerateObject } from "ai";
 
-export const createLovableAiGatewayProvider = (apiKey: string) => {
+// Fallback to manually load .env.local if the framework/Vite didn't expose non-VITE_ variables to process.env
+try {
+  const envPath = path.resolve(process.cwd(), ".env.local");
+  if (fs.existsSync(envPath)) {
+    const envContent = fs.readFileSync(envPath, "utf-8");
+    envContent.split("\n").forEach(line => {
+      const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+      if (match) {
+        const key = match[1];
+        let value = match[2] || "";
+        if (value.startsWith('"') && value.endsWith('"')) value = value.slice(1, -1);
+        if (value.startsWith("'") && value.endsWith("'")) value = value.slice(1, -1);
+        if (!process.env[key]) process.env[key] = value;
+      }
+    });
+  }
+} catch (e) {
+  // ignore
+}
+
+export function getResourceProviders() {
+  const providers: Array<{ name: string; model: any }> = [];
+  const key = process.env.PERPLEXITY_API_KEY;
+  if (key) {
+    try {
+      const isOR = key.startsWith("sk-or-");
+      const client = createOpenAICompatible({
+        name: "perplexity-resource",
+        apiKey: key,
+        baseURL: isOR ? "https://openrouter.ai/api/v1" : "https://api.perplexity.ai",
+        headers: isOR ? {
+          "HTTP-Referer": "https://projectspark.dev",
+          "X-Title": "ProjectSpark",
+        } : undefined,
+      });
+      providers.push({
+        name: "perplexity-resource",
+        model: client(isOR ? "perplexity/sonar" : "sonar"),
+      });
+    } catch (e) {
+      console.error("[AI Gateway] Failed to init resource provider:", e);
+    }
+  }
+  return providers;
+}
+
+export const createProjectSparkAiGatewayProvider = (apiKey: string) => {
   console.log("[AI Gateway] apiKey length:", apiKey?.length, "starts with AIzaSy/AQ:", apiKey?.startsWith("AIzaSy") || apiKey?.startsWith("AQ"), "prefix:", apiKey?.substring(0, 6));
   if (apiKey && (apiKey.startsWith("AIzaSy") || apiKey.startsWith("AQ"))) {
     const google = createGoogleGenerativeAI({
@@ -16,11 +64,11 @@ export const createLovableAiGatewayProvider = (apiKey: string) => {
   }
 
   return createOpenAICompatible({
-    name: "lovable",
-    baseURL: "https://ai.gateway.lovable.dev/v1",
+    name: "project-spark",
+    baseURL: "https://ai.gateway.projectspark.dev/v1",
     headers: {
-      "Lovable-API-Key": apiKey,
-      "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+      "ProjectSpark-API-Key": apiKey,
+      "X-ProjectSpark-AIG-SDK": "vercel-ai-sdk",
     },
   });
 };
@@ -28,21 +76,57 @@ export const createLovableAiGatewayProvider = (apiKey: string) => {
 export function getAvailableProviders() {
   const providers: Array<{ name: string; model: any }> = [];
 
-  // 1. Google Gemini (via GEMINI_API_KEY or LOVABLE_API_KEY starting with AIzaSy/AQ)
-  const geminiKey = process.env.GEMINI_API_KEY || process.env.LOVABLE_API_KEY;
-  if (geminiKey && (geminiKey.startsWith("AIzaSy") || geminiKey.startsWith("AQ"))) {
+  // -1. NVIDIA (via NVIDIA_API_KEY) - Super/Ultra primary API
+  if (process.env.NVIDIA_API_KEY) {
     try {
-      const google = createGoogleGenerativeAI({ apiKey: geminiKey });
+      const nvidia = createOpenAICompatible({
+        name: "nvidia",
+        apiKey: process.env.NVIDIA_API_KEY,
+        baseURL: "https://integrate.api.nvidia.com/v1",
+      });
       providers.push({
-        name: "google-gemini",
-        model: google("gemini-2.5-flash"),
+        name: "nvidia",
+        model: nvidia("meta/llama-3.1-70b-instruct"),
       });
     } catch (e) {
-      console.error("[AI Gateway] Failed to init Google provider:", e);
+      console.error("[AI Gateway] Failed to init NVIDIA provider:", e);
     }
   }
 
-  // 2. OpenAI (via OPENAI_API_KEY)
+  // 0. DeepSeek Secondary API Key (Provided by User)
+  try {
+    const deepseekKey = "8e5a79d68f5752cb1ba96ed5f5cfbeab";
+    // DeepSeek API requires 'sk-' prefix; automatically format it if user pasted raw hex
+    const formattedKey = deepseekKey.startsWith("sk-") ? deepseekKey : `sk-${deepseekKey}`;
+    const deepseek = createOpenAICompatible({
+      name: "deepseek",
+      apiKey: formattedKey,
+      baseURL: "https://api.deepseek.com",
+    });
+    providers.push({
+      name: "deepseek-secondary",
+      model: deepseek("deepseek-chat"),
+    });
+  } catch (e) {
+    console.error("[AI Gateway] Failed to init DeepSeek secondary provider:", e);
+  }
+
+  // 0.5 Cohere (via COHERE_API_KEY) - Prioritized because it is the only active API key with quota!
+  if (process.env.COHERE_API_KEY) {
+    try {
+      const cohere = createCohere({
+        apiKey: process.env.COHERE_API_KEY,
+      });
+      providers.push({
+        name: "cohere",
+        model: cohere("command-r-08-2024"),
+      });
+    } catch (e) {
+      console.error("[AI Gateway] Failed to init Cohere provider:", e);
+    }
+  }
+
+  // 1. OpenAI (via OPENAI_API_KEY) - Prioritized first to avoid free-tier quotas
   if (process.env.OPENAI_API_KEY) {
     try {
       const openai = createOpenAICompatible({
@@ -56,6 +140,20 @@ export function getAvailableProviders() {
       });
     } catch (e) {
       console.error("[AI Gateway] Failed to init OpenAI provider:", e);
+    }
+  }
+
+  // 2. Google Gemini (via GEMINI_API_KEY or PROJECTSPARK_API_KEY starting with AIzaSy/AQ)
+  const geminiKey = process.env.GEMINI_API_KEY || process.env.PROJECTSPARK_API_KEY;
+  if (geminiKey && (geminiKey.startsWith("AIzaSy") || geminiKey.startsWith("AQ"))) {
+    try {
+      const google = createGoogleGenerativeAI({ apiKey: geminiKey });
+      providers.push({
+        name: "google-gemini",
+        model: google("gemini-2.5-flash"),
+      });
+    } catch (e) {
+      console.error("[AI Gateway] Failed to init Google provider:", e);
     }
   }
 
@@ -91,20 +189,7 @@ export function getAvailableProviders() {
     }
   }
 
-  // 2.7. Cohere (via COHERE_API_KEY)
-  if (process.env.COHERE_API_KEY) {
-    try {
-      const cohere = createCohere({
-        apiKey: process.env.COHERE_API_KEY,
-      });
-      providers.push({
-        name: "cohere",
-        model: cohere("command-r-08-2024"),
-      });
-    } catch (e) {
-      console.error("[AI Gateway] Failed to init Cohere provider:", e);
-    }
-  }
+
 
   // 3. OpenRouter (via OPENROUTER_API_KEY)
   if (process.env.OPENROUTER_API_KEY) {
@@ -158,24 +243,24 @@ export function getAvailableProviders() {
     }
   }
 
-  // 5. Lovable (via non-Gemini LOVABLE_API_KEY)
-  const lovableKey = process.env.LOVABLE_API_KEY;
-  if (lovableKey && !lovableKey.startsWith("AIzaSy") && !lovableKey.startsWith("AQ")) {
+  // 5. ProjectSpark (via non-Gemini PROJECTSPARK_API_KEY)
+  const projectSparkKey = process.env.PROJECTSPARK_API_KEY;
+  if (projectSparkKey && !projectSparkKey.startsWith("AIzaSy") && !projectSparkKey.startsWith("AQ")) {
     try {
-      const lovable = createOpenAICompatible({
-        name: "lovable",
-        baseURL: "https://ai.gateway.lovable.dev/v1",
+      const projectSpark = createOpenAICompatible({
+        name: "project-spark",
+        baseURL: "https://ai.gateway.projectspark.dev/v1",
         headers: {
-          "Lovable-API-Key": lovableKey,
-          "X-Lovable-AIG-SDK": "vercel-ai-sdk",
+          "ProjectSpark-API-Key": projectSparkKey,
+          "X-ProjectSpark-AIG-SDK": "vercel-ai-sdk",
         },
       });
       providers.push({
-        name: "lovable-gateway",
-        model: lovable("google/gemini-3-flash-preview"),
+        name: "project-spark-gateway",
+        model: projectSpark("google/gemini-3-flash-preview"),
       });
     } catch (e) {
-      console.error("[AI Gateway] Failed to init Lovable provider:", e);
+      console.error("[AI Gateway] Failed to init ProjectSpark provider:", e);
     }
   }
 
@@ -235,9 +320,9 @@ export async function generateTextResilient(
   for (const prov of providersToTry) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.warn(`[AI Resilient] Provider ${prov.name} timed out after 4000ms`);
+      console.warn(`[AI Resilient] Provider ${prov.name} timed out after 60000ms`);
       controller.abort();
-    }, 4000);
+    }, 60000);
 
     try {
       console.log(`[AI Resilient] Attempting generation with provider: ${prov.name}`);
@@ -260,6 +345,87 @@ export async function generateTextResilient(
   throw lastError || new Error("All AI providers failed.");
 }
 
+export async function generateObjectResilient(
+  options: Omit<Parameters<typeof originalGenerateObject>[0], "model"> & { model?: any }
+) {
+  const providers = getAvailableProviders();
+  if (providers.length === 0) {
+    throw new Error("No AI API Keys configured.");
+  }
+
+  const activeProviders = providers.filter(p => !isCoolingDown(p.name));
+  const providersToTry = activeProviders.length > 0 ? activeProviders : providers;
+
+  let lastError: unknown;
+  for (const prov of providersToTry) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn(`[AI Resilient Object] Provider ${prov.name} timed out after 60000ms`);
+      controller.abort();
+    }, 60000);
+
+    try {
+      console.log(`[AI Resilient Object] Attempting generation with provider: ${prov.name}`);
+      const result = await originalGenerateObject({
+        ...(options as any),
+        model: prov.model,
+        abortSignal: options.abortSignal && typeof AbortSignal.any === "function"
+          ? AbortSignal.any([options.abortSignal, controller.signal])
+          : controller.signal,
+      });
+      return result;
+    } catch (e) {
+      console.error(`[AI Resilient Object] Provider ${prov.name} failed:`, e);
+      setCooldown(prov.name);
+      lastError = e;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  throw lastError || new Error("All AI providers failed.");
+}
+
+export async function generateResourceObjectResilient(
+  options: Omit<Parameters<typeof originalGenerateObject>[0], "model"> & { model?: any }
+) {
+  let providers = getResourceProviders();
+  if (providers.length === 0) {
+    console.warn("[AI Gateway] No Perplexity API Key configured for resources, falling back to general providers.");
+    providers = getAvailableProviders();
+  }
+
+  const activeProviders = providers.filter(p => !isCoolingDown(p.name));
+  const providersToTry = activeProviders.length > 0 ? activeProviders : providers;
+
+  let lastError: unknown;
+  for (const prov of providersToTry) {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => {
+      console.warn(`[AI Resilient Resource] Provider ${prov.name} timed out after 60000ms`);
+      controller.abort();
+    }, 60000);
+
+    try {
+      console.log(`[AI Resilient Resource] Attempting generation with provider: ${prov.name}`);
+      const result = await originalGenerateObject({
+        ...(options as any),
+        model: prov.model,
+        abortSignal: options.abortSignal && typeof AbortSignal.any === "function"
+          ? AbortSignal.any([options.abortSignal, controller.signal])
+          : controller.signal,
+      });
+      return result;
+    } catch (e) {
+      console.error(`[AI Resilient Resource] Provider ${prov.name} failed:`, e);
+      setCooldown(prov.name);
+      lastError = e;
+    } finally {
+      clearTimeout(timeoutId);
+    }
+  }
+  throw lastError || new Error("All AI providers failed for resource generation.");
+}
+
 export async function streamTextResilient(
   options: Omit<Parameters<typeof originalStreamText>[0], "model"> & { model?: any }
 ) {
@@ -277,9 +443,9 @@ export async function streamTextResilient(
   for (const prov of providersToTry) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => {
-      console.warn(`[AI Resilient Stream] Provider ${prov.name} timed out after 5000ms`);
+      console.warn(`[AI Resilient Stream] Provider ${prov.name} timed out after 30000ms`);
       controller.abort();
-    }, 5000);
+    }, 30000);
 
     try {
       console.log(`[AI Resilient Stream] Attempting streaming with provider: ${prov.name}`);

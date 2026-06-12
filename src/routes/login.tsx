@@ -5,6 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/lib/auth";
 import { Logo } from "@/components/Logo";
 import { Loader2 } from "lucide-react";
+import { BlackHoleBackground } from "@/components/BlackHoleBackground";
 
 export const Route = createFileRoute("/login")({
   head: () => ({ meta: [{ title: "Sign in — ProjectSpark" }] }),
@@ -76,22 +77,21 @@ function LoginPage() {
 
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4">
-      <div className="absolute inset-0 grid-bg opacity-30" />
+      <BlackHoleBackground />
       <div className="relative w-full max-w-md">
         <div className="mb-8 flex justify-center">
           <Logo />
         </div>
-        
+
         {showOtp ? (
           <div className="glass-strong rounded-3xl p-8 ring-spark animate-in fade-in duration-300">
-            <h1 className="font-display text-2xl font-semibold">
-              Verify your email
-            </h1>
+            <h1 className="font-display text-2xl font-semibold">Verify your email</h1>
             <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
               We have sent a verification email to <strong>{email}</strong>.
             </p>
             <p className="mt-1 text-xs text-muted-foreground/80 leading-relaxed">
-              Click the link in the email to verify, or if your template sends a 6-digit code, enter it below:
+              Click the link in the email to verify, or if your template sends a 6-digit code, enter
+              it below:
             </p>
             <form onSubmit={verifyOtp} className="mt-6 space-y-3">
               <input
@@ -177,7 +177,7 @@ function LoginPage() {
             </div>
           </div>
         )}
-        
+
         <div className="mt-6 text-center text-xs text-muted-foreground">
           <Link to="/" className="hover:text-foreground">
             ← back to home

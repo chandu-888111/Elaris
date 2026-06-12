@@ -1,6 +1,14 @@
 import { useState, useEffect, useCallback } from "react";
 
-export type SceneMode = "landing" | "dashboard" | "roadmap" | "study-guide" | "chat" | "mentor" | "analytics" | "default";
+export type SceneMode =
+  | "landing"
+  | "dashboard"
+  | "roadmap"
+  | "study-guide"
+  | "chat"
+  | "mentor"
+  | "analytics"
+  | "default";
 
 export interface SceneState {
   currentScene: SceneMode;
@@ -11,6 +19,7 @@ export interface SceneState {
   isTransitioning: boolean;
   coreScale: number;
   rotationSpeed: number;
+  postScenePhase: number; // 0=none, 1=zoom-in, 2=stars/asteroids, 3=collision, 4=galaxy
 }
 
 let state: SceneState = {
@@ -22,6 +31,7 @@ let state: SceneState = {
   isTransitioning: false,
   coreScale: 1.0,
   rotationSpeed: 0.1,
+  postScenePhase: 0,
 };
 
 const listeners = new Set<(s: SceneState) => void>();
@@ -43,7 +53,7 @@ export const sceneStore = {
   setScene(scene: SceneMode) {
     if (state.currentScene === scene) return;
     const config: Partial<SceneState> = { currentScene: scene };
-    
+
     switch (scene) {
       case "landing":
         config.cameraPosition = [0, 0, 4.0];
@@ -109,30 +119,33 @@ export const sceneStore = {
         config.coreScale = 1.0;
         config.rotationSpeed = 0.1;
     }
-    
+
     this.setState(config);
-  }
+  },
 };
 
 export function useSceneStore() {
   const [current, setCurrent] = useState<SceneState>(state);
-  
+
   useEffect(() => {
     return sceneStore.subscribe((s) => {
       setCurrent(s);
     });
   }, []);
-  
+
   const setScene = useCallback((scene: SceneMode) => {
     sceneStore.setScene(scene);
   }, []);
 
-  const setCamera = useCallback((pos: [number, number, number], lookAt?: [number, number, number]) => {
-    sceneStore.setState({
-      cameraPosition: pos,
-      cameraLookAt: lookAt ?? state.cameraLookAt,
-    });
-  }, []);
+  const setCamera = useCallback(
+    (pos: [number, number, number], lookAt?: [number, number, number]) => {
+      sceneStore.setState({
+        cameraPosition: pos,
+        cameraLookAt: lookAt ?? state.cameraLookAt,
+      });
+    },
+    [],
+  );
 
   const setState = useCallback((updates: Partial<SceneState>) => {
     sceneStore.setState(updates);

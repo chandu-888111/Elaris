@@ -34,6 +34,7 @@ import {
 } from "lucide-react";
 import { SearchPalette } from "@/components/SearchPalette";
 import { useSceneStore } from "@/hooks/use-scene-store";
+import { AsteroidBackground } from "@/components/AsteroidBackground";
 
 import { playHover, playClick, playSweep } from "@/lib/sounds";
 
@@ -50,7 +51,7 @@ const NAV = [
   { to: "/chat", label: "Chatbot", icon: MessageSquare },
   { to: "/roadmap", label: "Roadmap Planner", icon: Compass },
   { to: "/builder", label: "AI Project Builder", icon: Code2 },
-  { to: "/learning", label: "Learning Dashboard", icon: BookOpen },
+
   { to: "/progress", label: "Daily Progress", icon: CalendarCheck },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/resources", label: "Resources Hub", icon: Trophy },
@@ -62,7 +63,7 @@ const NAV = [
   { to: "/collaboration", label: "Collaboration Hub", icon: Users },
   { to: "/portfolio", label: "Portfolio Builder", icon: FolderHeart },
   { to: "/job-prep", label: "Interview Prep", icon: Terminal },
-  { to: "/internships", label: "Opportunity Hub", icon: Briefcase },
+
   { to: "/books", label: "Books & Docs Hub", icon: BookOpen },
 
   { to: "/settings", label: "Settings", icon: Settings },
@@ -118,9 +119,9 @@ function AppLayout() {
   }
 
   return (
-    <div className="relative flex h-svh w-full overflow-hidden aurora-bg pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+    <div className="relative flex h-svh w-full overflow-hidden pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+      <AsteroidBackground />
       <SearchPalette />
-      <div className="pointer-events-none absolute inset-0 grid-bg opacity-25 [mask-image:radial-gradient(ellipse_at_top_left,black,transparent_70%)]" />
 
       {/* Desktop Sidebar */}
       <aside className="sticky top-0 z-20 hidden w-64 shrink-0 flex-col glass-panel rounded-none border-y-0 border-l-0 px-4 py-6 lg:flex h-full">
@@ -240,9 +241,10 @@ function AppLayout() {
           {isChat ? (
             <Outlet />
           ) : (
-            <PageTransition>
+            <>
+              <PageTransition location={path} />
               <Outlet />
-            </PageTransition>
+            </>
           )}
         </div>
       </main>

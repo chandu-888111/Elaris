@@ -27,9 +27,7 @@ import { Route as AppProfileRouteImport } from './routes/_app.profile'
 import { Route as AppPortfolioRouteImport } from './routes/_app.portfolio'
 import { Route as AppMentorRouteImport } from './routes/_app.mentor'
 import { Route as AppMarketplaceRouteImport } from './routes/_app.marketplace'
-import { Route as AppLearningRouteImport } from './routes/_app.learning'
 import { Route as AppJobPrepRouteImport } from './routes/_app.job-prep'
-import { Route as AppInternshipsRouteImport } from './routes/_app.internships'
 import { Route as AppGeneratorRouteImport } from './routes/_app.generator'
 import { Route as AppDashboardRouteImport } from './routes/_app.dashboard'
 import { Route as AppCollaborationRouteImport } from './routes/_app.collaboration'
@@ -136,19 +134,9 @@ const AppMarketplaceRoute = AppMarketplaceRouteImport.update({
   path: '/marketplace',
   getParentRoute: () => AppRoute,
 } as any)
-const AppLearningRoute = AppLearningRouteImport.update({
-  id: '/learning',
-  path: '/learning',
-  getParentRoute: () => AppRoute,
-} as any)
 const AppJobPrepRoute = AppJobPrepRouteImport.update({
   id: '/job-prep',
   path: '/job-prep',
-  getParentRoute: () => AppRoute,
-} as any)
-const AppInternshipsRoute = AppInternshipsRouteImport.update({
-  id: '/internships',
-  path: '/internships',
   getParentRoute: () => AppRoute,
 } as any)
 const AppGeneratorRoute = AppGeneratorRouteImport.update({
@@ -246,9 +234,7 @@ export interface FileRoutesByFullPath {
   '/collaboration': typeof AppCollaborationRoute
   '/dashboard': typeof AppDashboardRoute
   '/generator': typeof AppGeneratorRoute
-  '/internships': typeof AppInternshipsRoute
   '/job-prep': typeof AppJobPrepRoute
-  '/learning': typeof AppLearningRoute
   '/marketplace': typeof AppMarketplaceRoute
   '/mentor': typeof AppMentorRoute
   '/portfolio': typeof AppPortfolioRoute
@@ -283,9 +269,7 @@ export interface FileRoutesByTo {
   '/collaboration': typeof AppCollaborationRoute
   '/dashboard': typeof AppDashboardRoute
   '/generator': typeof AppGeneratorRoute
-  '/internships': typeof AppInternshipsRoute
   '/job-prep': typeof AppJobPrepRoute
-  '/learning': typeof AppLearningRoute
   '/marketplace': typeof AppMarketplaceRoute
   '/mentor': typeof AppMentorRoute
   '/portfolio': typeof AppPortfolioRoute
@@ -322,9 +306,7 @@ export interface FileRoutesById {
   '/_app/collaboration': typeof AppCollaborationRoute
   '/_app/dashboard': typeof AppDashboardRoute
   '/_app/generator': typeof AppGeneratorRoute
-  '/_app/internships': typeof AppInternshipsRoute
   '/_app/job-prep': typeof AppJobPrepRoute
-  '/_app/learning': typeof AppLearningRoute
   '/_app/marketplace': typeof AppMarketplaceRoute
   '/_app/mentor': typeof AppMentorRoute
   '/_app/portfolio': typeof AppPortfolioRoute
@@ -362,9 +344,7 @@ export interface FileRouteTypes {
     | '/collaboration'
     | '/dashboard'
     | '/generator'
-    | '/internships'
     | '/job-prep'
-    | '/learning'
     | '/marketplace'
     | '/mentor'
     | '/portfolio'
@@ -399,9 +379,7 @@ export interface FileRouteTypes {
     | '/collaboration'
     | '/dashboard'
     | '/generator'
-    | '/internships'
     | '/job-prep'
-    | '/learning'
     | '/marketplace'
     | '/mentor'
     | '/portfolio'
@@ -437,9 +415,7 @@ export interface FileRouteTypes {
     | '/_app/collaboration'
     | '/_app/dashboard'
     | '/_app/generator'
-    | '/_app/internships'
     | '/_app/job-prep'
-    | '/_app/learning'
     | '/_app/marketplace'
     | '/_app/mentor'
     | '/_app/portfolio'
@@ -598,25 +574,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppMarketplaceRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/learning': {
-      id: '/_app/learning'
-      path: '/learning'
-      fullPath: '/learning'
-      preLoaderRoute: typeof AppLearningRouteImport
-      parentRoute: typeof AppRoute
-    }
     '/_app/job-prep': {
       id: '/_app/job-prep'
       path: '/job-prep'
       fullPath: '/job-prep'
       preLoaderRoute: typeof AppJobPrepRouteImport
-      parentRoute: typeof AppRoute
-    }
-    '/_app/internships': {
-      id: '/_app/internships'
-      path: '/internships'
-      fullPath: '/internships'
-      preLoaderRoute: typeof AppInternshipsRouteImport
       parentRoute: typeof AppRoute
     }
     '/_app/generator': {
@@ -772,9 +734,7 @@ interface AppRouteChildren {
   AppCollaborationRoute: typeof AppCollaborationRoute
   AppDashboardRoute: typeof AppDashboardRoute
   AppGeneratorRoute: typeof AppGeneratorRoute
-  AppInternshipsRoute: typeof AppInternshipsRoute
   AppJobPrepRoute: typeof AppJobPrepRoute
-  AppLearningRoute: typeof AppLearningRoute
   AppMarketplaceRoute: typeof AppMarketplaceRoute
   AppMentorRoute: typeof AppMentorRoute
   AppPortfolioRoute: typeof AppPortfolioRoute
@@ -803,9 +763,7 @@ const AppRouteChildren: AppRouteChildren = {
   AppCollaborationRoute: AppCollaborationRoute,
   AppDashboardRoute: AppDashboardRoute,
   AppGeneratorRoute: AppGeneratorRoute,
-  AppInternshipsRoute: AppInternshipsRoute,
   AppJobPrepRoute: AppJobPrepRoute,
-  AppLearningRoute: AppLearningRoute,
   AppMarketplaceRoute: AppMarketplaceRoute,
   AppMentorRoute: AppMentorRoute,
   AppPortfolioRoute: AppPortfolioRoute,

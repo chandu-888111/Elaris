@@ -11,9 +11,13 @@ import { useAuth } from "@/lib/auth";
 import { awardXP, XP, unlockAchievement } from "@/lib/gamification";
 import { toast } from "sonner";
 import { z } from "zod";
-import { StudyGuideUniverse } from "@/components/StudyGuideUniverse";
 import { HolographicPanel } from "@/components/HolographicPanel";
 import { getBYOXLinkForTask } from "@/lib/byox-link";
+import { lazy, Suspense } from "react";
+
+// Lazy load heavy 3D background and components
+const LibraryCanvas = lazy(() => import("@/components/canvas/LibraryCanvas"));
+const StudyGuideUniverse = lazy(() => import("@/components/StudyGuideUniverse").then(m => ({ default: m.StudyGuideUniverse })));
 
 type StudyRow = {
   id: string;
@@ -161,8 +165,13 @@ function StudyPage() {
   const streak = Math.min(doneTasks, 30);
 
   return (
-    <PageShell>
-      <PageHeader
+    <PageShell className="p-0 overflow-hidden relative">
+      <Suspense fallback={<div className="absolute inset-0 bg-[#01030a]" />}>
+        <LibraryCanvas />
+      </Suspense>
+      
+      <div className="relative z-10 h-[calc(100vh-3.5rem)] overflow-y-auto custom-scrollbar p-6">
+        <PageHeader
         icon={GraduationCap}
         title="AI Study Guide"
         description="A personalised, week-by-week curriculum with tasks, resources, projects and quizzes."
@@ -190,8 +199,8 @@ function StudyPage() {
         }
       />
 
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
-        <div className="space-y-4 rounded-2xl border border-border bg-card/60 p-6 backdrop-blur">
+      <div className="grid gap-6 lg:grid-cols-[360px_1fr] max-w-7xl mx-auto pb-12 mt-6">
+        <HolographicPanel className="space-y-4 rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl self-start sticky top-6">
           <Field label="Domain">
             <Pills value={domain} setValue={setDomain} options={DOMAINS} />
           </Field>
@@ -237,7 +246,7 @@ function StudyPage() {
               <MiniStat label="Done" value={`${doneTasks}/${totalTasks}`} />
             </div>
           )}
-        </div>
+        </HolographicPanel>
 
         <div className="min-h-[400px] space-y-4 relative">
           {guide && (
@@ -281,26 +290,28 @@ function StudyPage() {
           {guide && (
             <>
               {viewMode === "3d" ? (
-                <StudyGuideUniverse
-                  guide={guide}
-                  completed={completed}
-                  onToggleComplete={(k) => setCompleted((c) => ({ ...c, [k]: !c[k] }))}
-                  bookmarks={bookmarks}
-                  onToggleBookmark={(k) => setBookmarks((b) => ({ ...b, [k]: !b[k] }))}
-                />
+                <Suspense fallback={<div className="flex h-[400px] items-center justify-center rounded-2xl border border-white/10 bg-black/40"><div className="h-12 w-12 rounded-full border-2 border-spark border-t-transparent animate-spin" /></div>}>
+                  <StudyGuideUniverse
+                    guide={guide}
+                    completed={completed}
+                    onToggleComplete={(k) => setCompleted((c) => ({ ...c, [k]: !c[k] }))}
+                    bookmarks={bookmarks}
+                    onToggleBookmark={(k) => setBookmarks((b) => ({ ...b, [k]: !b[k] }))}
+                  />
+                </Suspense>
               ) : (
                 <>
-                  <div className="rounded-2xl border border-border bg-gradient-to-br from-card/80 to-card/30 p-5">
-                    <div className="text-xs uppercase tracking-widest text-spark">Curriculum</div>
-                    <h2 className="font-display text-2xl font-semibold">{guide.title}</h2>
-                    <p className="mt-2 text-sm text-muted-foreground">{guide.summary}</p>
-                  </div>
+                  <HolographicPanel className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl mb-6">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-spark">Data Core</div>
+                    <h2 className="font-display text-3xl font-bold text-white mt-1">{guide.title}</h2>
+                    <p className="mt-3 text-sm text-white/60 leading-relaxed">{guide.summary}</p>
+                  </HolographicPanel>
 
-                  <div className="space-y-3">
+                  <div className="space-y-4">
                     {guide.weeks.map((w) => (
-                      <div key={w.week} className="rounded-2xl border border-border bg-card/60 p-5">
-                        <div className="mb-3 flex items-center justify-between">
-                          <h3 className="font-medium">
+                      <HolographicPanel key={w.week} className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl hover:bg-white/5 transition-colors">
+                        <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
+                          <h3 className="font-bold text-lg text-white">
                             Week {w.week} — {w.focus}
                           </h3>
                           <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
@@ -365,7 +376,7 @@ function StudyPage() {
                             ))}
                           </div>
                         )}
-                      </div>
+                      </HolographicPanel>
                     ))}
                   </div>
 
@@ -378,6 +389,7 @@ function StudyPage() {
             </>
           )}
         </div>
+      </div>
       </div>
     </PageShell>
   );
@@ -434,12 +446,12 @@ function Card({
   items: string[];
 }) {
   return (
-    <div className="rounded-2xl border border-border bg-card/60 p-5">
-      <div className="mb-3 flex items-center gap-2">
-        <Icon className="h-4 w-4 text-spark" />
-        <h3 className="text-sm font-medium">{title}</h3>
+    <HolographicPanel className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl">
+      <div className="mb-4 flex items-center gap-2">
+        <Icon className="h-5 w-5 text-spark" />
+        <h3 className="text-sm font-bold uppercase tracking-widest text-white">{title}</h3>
       </div>
-      <ul className="space-y-1.5 text-sm">
+      <ul className="space-y-3 text-sm">
         <BookOpen className="hidden" />
         {items.map((i, n) => (
           <li key={n} className="flex gap-2">
@@ -448,6 +460,6 @@ function Card({
           </li>
         ))}
       </ul>
-    </div>
+    </HolographicPanel>
   );
 }

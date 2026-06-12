@@ -61,7 +61,7 @@ function About() {
             {
               icon: MessageSquare,
               t: "AI Chat",
-              d: "Threaded, persistent conversations powered by Lovable AI.",
+              d: "Threaded, persistent conversations powered by AI.",
               to: "/chat",
             },
           ].map((f) => (
@@ -84,8 +84,6 @@ function About() {
               "TanStack Start",
               "React 19",
               "Tailwind CSS v4",
-              "Lovable Cloud",
-              "Lovable AI Gateway",
               "Vercel AI SDK",
               "Recharts",
             ].map((t) => (

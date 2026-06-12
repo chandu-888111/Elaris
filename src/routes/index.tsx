@@ -1,78 +1,62 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion, useScroll, useTransform } from "framer-motion";
-import { lazy, Suspense, useRef, useState, useEffect } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
+import { Component, type ReactNode, lazy, Suspense, useRef, useState, useEffect } from "react";
 import { Logo } from "@/components/Logo";
 import { useSceneStore } from "@/hooks/use-scene-store";
-import { InfiniteCarousel } from "@/components/InfiniteCarousel";
 import { playHover, playClick } from "@/lib/sounds";
-import {
-  Sparkles,
-  Brain,
-  Rocket,
-  Code2,
-  Compass,
-  MessageSquare,
-  GraduationCap,
-  ArrowRight,
-  Github,
-  Check,
-} from "lucide-react";
+import { ArrowRight, Rocket } from "lucide-react";
+import gsap from "gsap";
+
+// Lazy load GlobalCanvas
+const GlobalCanvas = lazy(() => import("@/components/GlobalCanvas"));
+
+class CanvasErrorBoundary extends Component<{ children: ReactNode }, { hasError: boolean }> {
+  constructor(props: { children: ReactNode }) {
+    super(props);
+    this.state = { hasError: false };
+  }
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
+// Lazy-load all expansion components for performance
+const AntigravityText = lazy(() =>
+  import("@/components/landing/AntigravityText").then((m) => ({ default: m.AntigravityText })),
+);
+const BentoGrid = lazy(() =>
+  import("@/components/landing/BentoGrid").then((m) => ({ default: m.BentoGrid })),
+);
+const InfiniteMarquee = lazy(() =>
+  import("@/components/landing/InfiniteMarquee").then((m) => ({ default: m.InfiniteMarquee })),
+);
+const FeatureShowcase = lazy(() =>
+  import("@/components/landing/FeatureShowcase").then((m) => ({ default: m.FeatureShowcase })),
+);
+const LiveStats = lazy(() =>
+  import("@/components/landing/LiveStats").then((m) => ({ default: m.LiveStats })),
+);
+const DeveloperEcosystem = lazy(() =>
+  import("@/components/landing/DeveloperEcosystem").then((m) => ({
+    default: m.DeveloperEcosystem,
+  })),
+);
+const UniverseFooter = lazy(() =>
+  import("@/components/landing/UniverseFooter").then((m) => ({ default: m.UniverseFooter })),
+);
 
 export const Route = createFileRoute("/")({
   head: () => ({
-    meta: [
-      { title: "ProjectSpark — Generate ideas, learn anything, build with AI" },
-      {
-        name: "description",
-        content:
-          "The futuristic AI OS combining ChatGPT, GitHub, Coursera & Notion AI for students, developers and founders.",
-      },
-    ],
+    meta: [{ title: "ProjectSpark — AI Innovation & Learning OS" }],
   }),
-  component: Landing,
+  component: LandingPage,
 });
 
-const features = [
-  {
-    icon: Sparkles,
-    title: "Project Generator",
-    desc: "AI-crafted, schema-validated project ideas across 10+ domains.",
-  },
-  {
-    icon: Brain,
-    title: "AI Mentor",
-    desc: "Step-by-step build guidance with milestones and checklists.",
-  },
-  {
-    icon: GraduationCap,
-    title: "Study Guide",
-    desc: "Personalized weekly roadmaps with mini-projects and quizzes.",
-  },
-  {
-    icon: MessageSquare,
-    title: "Universal Chatbot",
-    desc: "Streaming AI chat with markdown, code highlighting and memory.",
-  },
-  {
-    icon: Compass,
-    title: "Roadmap Planner",
-    desc: "Career timelines from junior to senior with skills & projects.",
-  },
-  {
-    icon: Code2,
-    title: "AI Project Builder",
-    desc: "Folder structure, starter code, schemas and deployment guides.",
-  },
-];
-
-const stats = [
-  { n: "10+", l: "domains" },
-  { n: "17", l: "modules" },
-  { n: "∞", l: "ideas" },
-  { n: "1", l: "OS" },
-];
-
-// Magnetic effect helper wrapper for CTAs
+// Using Framer Motion for magnetic button effect
 function Magnetic({ children }: { children: React.ReactElement }) {
   const ref = useRef<HTMLDivElement>(null);
   const [position, setPosition] = useState({ x: 0, y: 0 });
@@ -83,30 +67,20 @@ function Magnetic({ children }: { children: React.ReactElement }) {
     const { left, top, width, height } = ref.current.getBoundingClientRect();
     const centerX = left + width / 2;
     const centerY = top + height / 2;
-    
     const distanceX = clientX - centerX;
     const distanceY = clientY - centerY;
-    
-    const reach = 100;
-    const distance = Math.sqrt(distanceX * distanceX + distanceY * distanceY);
-    
-    if (distance < reach) {
-      const strength = 0.35;
-      setPosition({ x: distanceX * strength, y: distanceY * strength });
+    if (Math.sqrt(distanceX * distanceX + distanceY * distanceY) < 100) {
+      setPosition({ x: distanceX * 0.35, y: distanceY * 0.35 });
     } else {
       setPosition({ x: 0, y: 0 });
     }
-  };
-
-  const handleMouseLeave = () => {
-    setPosition({ x: 0, y: 0 });
   };
 
   return (
     <motion.div
       ref={ref}
       onMouseMove={handleMouseMove}
-      onMouseLeave={handleMouseLeave}
+      onMouseLeave={() => setPosition({ x: 0, y: 0 })}
       animate={{ x: position.x, y: position.y }}
       transition={{ type: "spring", stiffness: 150, damping: 15, mass: 0.1 }}
       className="inline-block"
@@ -116,413 +90,424 @@ function Magnetic({ children }: { children: React.ReactElement }) {
   );
 }
 
-// Framer motion variants for clean scroll-storytelling
-const containerVariants = {
-  hidden: { opacity: 0 },
-  show: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.12,
-    },
-  },
-} as const;
+function PortalButton({ children, className }: { children: React.ReactNode; className?: string }) {
+  const navigate = useNavigate();
+  const store = useSceneStore();
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.97 },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      type: "spring" as const,
-      stiffness: 90,
-      damping: 14,
-    },
-  },
-} as const;
+  const handlePortalEntry = (e: React.MouseEvent) => {
+    e.preventDefault();
+    playClick();
 
-function Landing() {
-  const { scrollYProgress } = useScroll();
+    // Trigger the camera dive into the AI Core
+    gsap.to(store.cameraPosition, {
+      0: 0, // x
+      1: 0, // y
+      2: -0.5, // z (deep inside the core)
+      duration: 1.5,
+      ease: "power4.in",
+    });
+
+    // Create a white-out flash overlay
+    const flash = document.createElement("div");
+    flash.style.position = "fixed";
+    flash.style.inset = "0";
+    flash.style.backgroundColor = "white";
+    flash.style.opacity = "0";
+    flash.style.zIndex = "9999";
+    flash.style.pointerEvents = "none";
+    document.body.appendChild(flash);
+
+    gsap.to(flash, {
+      opacity: 1,
+      duration: 1.2,
+      delay: 0.3,
+      ease: "power2.inOut",
+      onComplete: () => {
+        // Hard navigate when fully white
+        navigate({ to: "/login" });
+        setTimeout(() => {
+          gsap.to(flash, { opacity: 0, duration: 1, onComplete: () => flash.remove() });
+        }, 500);
+      },
+    });
+  };
+
+  return (
+    <button onClick={handlePortalEntry} onMouseEnter={playHover} className={className}>
+      {children}
+    </button>
+  );
+}
+
+const SCENES = [
+  {
+    id: 1,
+    title: "The Primordial Spark",
+    subtitle: "The Heart.",
+    desc: "A massive procedural AI entity built from liquid glass and neural noise. It breathes, learns, and reacts to your presence.",
+    action: "Initialize Sequence",
+  },
+  {
+    id: 2,
+    title: "Knowledge Galaxy",
+    subtitle: "Orbiting Technologies.",
+    desc: "Navigate the universe of learning. Technologies become planets, concepts become moons, and resources orbit as high-speed satellites.",
+    action: "Explore Universe",
+  },
+  {
+    id: 3,
+    title: "Developer Ecosystem",
+    subtitle: "Orbiting Technologies.",
+    desc: "Navigate the universe of learning. Technologies become planets, concepts become moons, and resources orbit as high-speed satellites.",
+    action: "Explore Ecosystem",
+  },
+  {
+    id: 4,
+    title: "AI Project Generator",
+    subtitle: "Code flows like water.",
+    desc: "Watch as the AI dynamically forms your architectures, compiling directories and infrastructure directly into your workspace.",
+    action: "Deploy Architectures",
+  },
+  {
+    id: 5,
+    title: "Team Collaboration Universe",
+    subtitle: "Global Sync.",
+    desc: "Form alliances with developers across the globe. The AI matches complementary skills instantly in a visual 3D hub.",
+    action: "Sync Network",
+  },
+  {
+    id: 6,
+    title: "Learning & Career Engine",
+    subtitle: "Ascension.",
+    desc: "Your achievements unlock new trajectories. Your resume, interview readiness, and streak scores form a holographic identity.",
+    action: "View Trajectory",
+  },
+  {
+    id: 7,
+    title: "Future Developer Identity",
+    subtitle: "Vision 2050.",
+    desc: "ProjectSpark is not a website. It is a full AI Operating System. Are you ready to step through the portal?",
+    action: "Enter The Portal",
+  },
+];
+
+function LandingPage() {
+  const navigate = useNavigate();
+  const [showGetStarted, setShowGetStarted] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowGetStarted(window.scrollY > window.innerHeight * 7 + window.innerHeight * 0.2);
+    };
+    window.addEventListener("scroll", handleScroll);
+    handleScroll();
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <>
+      <FixedHeader />
+      <div className="relative text-foreground overflow-x-clip">
+        <LandingMovie />
+
+        {/* Antigravity Expansion Sections */}
+        <Suspense
+          fallback={<div className="py-24 text-center text-white/50">Loading Ecosystem...</div>}
+        >
+          <AntigravityText />
+          <DeveloperEcosystem />
+          <InfiniteMarquee />
+          <BentoGrid />
+          <LiveStats />
+          <FeatureShowcase />
+          <UniverseFooter />
+        </Suspense>
+        <BackToTop />
+
+        {/* Floating Get Started button — persistent above BackToTop after core reveal */}
+        <AnimatePresence>
+          {showGetStarted && (
+            <motion.button
+              initial={{ opacity: 0, y: 30, scale: 0.8 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 30, scale: 0.8 }}
+              onClick={() => navigate({ to: "/login" })}
+              className="fixed bottom-24 right-8 z-50 group inline-flex items-center gap-2 rounded-full border border-white/30 bg-white/10 px-6 py-3 text-sm font-medium tracking-wider backdrop-blur-xl transition-all hover:bg-white hover:text-black shadow-[0_0_25px_rgba(255,255,255,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.4)]"
+            >
+              <span>Get Started</span>
+              <Rocket className="h-3.5 w-3.5 transition-transform duration-300 group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </motion.button>
+          )}
+        </AnimatePresence>
+      </div>
+    </>
+  );
+}
+
+function FixedHeader() {
+  const [activeScene, setActiveScene] = useState(0);
+  const [hidden, setHidden] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const scrollY = window.scrollY;
+      const v = scrollY / (window.innerHeight * 7);
+      setActiveScene(Math.min(6, Math.max(0, Math.floor(v * 7))));
+      setHidden(scrollY > window.innerHeight * 0.3);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  const showNav = activeScene < 6;
+
+  return (
+    <motion.header
+      animate={{ opacity: hidden ? 0 : 1, y: hidden ? -20 : 0 }}
+      transition={{ duration: 0.4, ease: "easeInOut" }}
+      className="fixed top-0 left-0 right-0 z-50 mx-auto flex max-w-7xl items-center justify-between px-6 py-6 pointer-events-none"
+    >
+      <div className="pointer-events-auto">
+        <Logo />
+      </div>
+      {!showNav && (
+        <span className="hidden md:block text-xs uppercase tracking-[0.3em] text-white/40 pointer-events-auto">
+          Core Access
+        </span>
+      )}
+      <Magnetic>
+        <PortalButton className="rounded-full bg-white px-5 py-2 text-sm font-bold text-black hover:scale-105 transition-transform pointer-events-auto">
+          {activeScene < 6 ? "Initialize Portal" : "Enter The Core"}
+        </PortalButton>
+      </Magnetic>
+    </motion.header>
+  );
+}
+
+function BackToTop() {
+  const [show, setShow] = useState(false);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShow(window.scrollY > window.innerHeight);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.button
+          initial={{ opacity: 0, y: 50, scale: 0.5 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: 50, scale: 0.5 }}
+          onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+          className="fixed bottom-8 right-8 z-50 p-4 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white hover:bg-white hover:text-black transition-colors shadow-[0_0_20px_rgba(255,255,255,0.1)] group"
+        >
+          <Rocket className="h-5 w-5 group-hover:-translate-y-1 transition-transform" />
+        </motion.button>
+      )}
+    </AnimatePresence>
+  );
+}
+
+const SCENE_BOUNDARY = 0.823; // 700/850 — scenes occupy first 700vh of 850vh
+const SCENE_STEP = SCENE_BOUNDARY / 7; // 0.1176 per scene
+
+function getPostPhase(v: number): number {
+  if (v < SCENE_BOUNDARY) return 0;
+  const t = (v - SCENE_BOUNDARY) / (1 - SCENE_BOUNDARY); // 0..1 in post-zone
+  if (t < 0.25) return 1;
+  if (t < 0.5) return 2;
+  if (t < 0.75) return 3;
+  return 4;
+}
+
+function PostSceneOverlay({ postPhase }: { postPhase: number }) {
+  const navigate = useNavigate();
+
+  return (
+    <div className="absolute inset-0 z-10 flex flex-col items-center justify-end pb-32 pointer-events-none">
+      {postPhase >= 3 && (
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.8 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 120, damping: 12 }}
+          className="pointer-events-auto"
+        >
+          <Magnetic>
+            <button
+              onClick={() => navigate({ to: "/login" })}
+              className="group inline-flex items-center gap-3 rounded-full border border-white/30 bg-white/10 px-10 py-4 text-base font-medium backdrop-blur-xl transition-all hover:bg-white hover:text-black shadow-[0_0_30px_rgba(255,255,255,0.15)] hover:shadow-[0_0_60px_rgba(255,255,255,0.5)] hover:scale-105"
+            >
+              <span className="tracking-wider">Get Started</span>
+              <Rocket className="h-4 w-4 transition-transform duration-300 group-hover:-translate-y-1 group-hover:translate-x-1" />
+            </button>
+          </Magnetic>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+
+function LandingMovie() {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: containerRef,
+    offset: ["start start", "end end"],
+  });
   const { setScene, setState } = useSceneStore();
-  
+  const [activeScene, setActiveScene] = useState(0);
+  const [scrollVal, setScrollVal] = useState(0);
+
   useEffect(() => {
     setScene("landing");
   }, [setScene]);
-  
-  // Dynamic 3D mapping mappings based on scroll progression
-  const scaleVal = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [1.25, 1.6, 0.95, 1.4, 1.15]);
-  const particlesVal = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [1.0, 1.6, 0.5, 1.3, 0.7]);
-  const camZ = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [4.0, 3.4, 5.0, 4.2, 4.0]);
-  const camY = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [0.0, -0.4, 0.6, -0.2, 0.1]);
-  const colorVal = useTransform(
-    scrollYProgress, 
-    [0, 0.35, 0.7, 1], 
-    ["#c084fc", "#38bdf8", "#ec4899", "#818cf8"]
+
+  // Update global 3D canvas state based on scroll
+  const camZ = useTransform(
+    scrollYProgress,
+    [0, 0.1176, 0.2353, 0.3529, 0.4706, 0.5882, 0.7059, 0.823, 1],
+    [10.0, 7.0, 12.0, 8.0, 15.0, 5.0, 3.0, 3.0, 0.5],
+  );
+  const camX = useTransform(
+    scrollYProgress,
+    [0, 0.1176, 0.2353, 0.3529, 0.4706, 0.5882, 0.7059, 0.823, 1],
+    [0, 3, -4, 2, -3, 1, 0, 0, 0],
+  );
+  const particles = useTransform(scrollYProgress, [0, 0.4115, 0.823, 1], [1.0, 4.0, 8.0, 12.0]);
+  const colors = useTransform(
+    scrollYProgress,
+    [0, 0.3, 0.6, 0.823, 1],
+    ["#ffffff", "#60a5fa", "#c084fc", "#fcd34d", "#ff6b6b"],
   );
 
   useEffect(() => {
-    const unsub = scrollYProgress.on("change", (latest) => {
+    const unsub = scrollYProgress.on("change", (v) => {
+      setScrollVal(v);
+      const sceneIndex = v < SCENE_BOUNDARY ? Math.min(6, Math.floor(v / SCENE_STEP)) : 6;
+      setActiveScene(sceneIndex);
+      const phase = getPostPhase(v);
       setState({
-        coreScale: scaleVal.get(),
-        particlesIntensity: particlesVal.get(),
-        cameraPosition: [1.1 * (1 - latest), camY.get(), camZ.get()],
-        glowColor: colorVal.get(),
+        cameraPosition: [camX.get(), 0, camZ.get()],
+        particlesIntensity: particles.get(),
+        glowColor: colors.get(),
+        coreScale:
+          v < SCENE_BOUNDARY
+            ? 1 + v * 0.5
+            : 1 + SCENE_BOUNDARY * 0.5 + ((v - SCENE_BOUNDARY) / (1 - SCENE_BOUNDARY)) * 1.2,
+        postScenePhase: phase,
       });
     });
     return () => unsub();
-  }, [scrollYProgress, scaleVal, particlesVal, camY, camZ, colorVal, setState]);
+  }, [scrollYProgress, camX, camZ, particles, colors, setState]);
+
+  const postPhase = getPostPhase(scrollVal);
 
   return (
-    <div className="relative min-h-screen overflow-hidden">
-      <div className="absolute inset-0 grid-bg opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
-      {/* Nav */}
-      <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
-        <Logo />
-        <nav className="hidden items-center gap-8 text-sm text-muted-foreground md:flex">
-          <a href="#features" className="hover:text-foreground transition-colors">
-            Features
-          </a>
-          <a href="#pricing" className="hover:text-foreground transition-colors">
-            Pricing
-          </a>
-          <a href="#faq" className="hover:text-foreground transition-colors">
-            FAQ
-          </a>
-        </nav>
-        <div className="flex items-center gap-2">
-          <Link
-            to="/login"
-            onMouseEnter={playHover}
-            onClick={playClick}
-            className="hidden rounded-xl px-3 py-2 text-sm text-muted-foreground hover:text-foreground sm:inline-block transition-colors"
-          >
-            Sign in
-          </Link>
-          <Magnetic>
-            <Link
-              to="/login"
-              onMouseEnter={playHover}
-              onClick={playClick}
-              className="rounded-xl bg-gradient-spark px-4 py-2 text-sm font-medium text-primary-foreground shadow-glow block"
-            >
-              Get started
-            </Link>
-          </Magnetic>
-        </div>
-      </header>
+    <div ref={containerRef} className="relative h-[850vh] bg-transparent pointer-events-none">
+      {/* Fixed Viewport Container */}
+      <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col justify-between pointer-events-auto">
+        {/* --- Global Cinematic 3D Background --- */}
+        <Suspense fallback={<div className="fixed inset-0 bg-[#000510]" />}>
+          <CanvasErrorBoundary>
+            <GlobalCanvas />
+          </CanvasErrorBoundary>
+        </Suspense>
 
-      {/* Hero */}
-      <section className="relative z-10 mx-auto grid max-w-7xl items-center gap-10 px-6 pt-12 pb-24 lg:grid-cols-2 lg:pt-20">
-        <div>
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="inline-flex items-center gap-2 rounded-full border border-border bg-card/50 px-3 py-1 text-xs text-muted-foreground backdrop-blur"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-spark animate-pulse" />
-            Now with AI Mentor & threaded chat
-          </motion.div>
-          <motion.h1
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.05 }}
-            className="mt-6 max-w-2xl text-5xl font-semibold leading-[1.05] sm:text-6xl md:text-7xl"
-          >
-            The AI operating system for{" "}
-            <span className="text-gradient">builders &amp; learners</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.15 }}
-            className="mt-6 max-w-xl text-lg text-muted-foreground"
-          >
-            Generate project ideas, learn any technology, and build production apps with an AI
-            mentor — all from one futuristic workspace.
-          </motion.p>
-          <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 0.25 }}
-            className="mt-10 flex flex-wrap items-center gap-4"
-          >
-            <Magnetic>
-              <Link
-                to="/generator"
-                onMouseEnter={playHover}
-                onClick={playClick}
-                className="group inline-flex items-center gap-2 rounded-2xl bg-gradient-spark px-6 py-3 text-sm font-medium text-primary-foreground shadow-glow transition-all hover:brightness-110"
-              >
-                Generate project ideas{" "}
-                <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-              </Link>
-            </Magnetic>
-            <Magnetic>
-              <Link
-                to="/chat"
-                onMouseEnter={playHover}
-                onClick={playClick}
-                className="rounded-2xl border border-border bg-card/50 px-6 py-3 text-sm font-medium backdrop-blur transition-colors hover:border-spark/40 hover:bg-card block"
-              >
-                Talk with AI
-              </Link>
-            </Magnetic>
-          </motion.div>
-        </div>
-
-        {/* 3D AI Orb Placeholder viewport */}
-        <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.2, delay: 0.2 }}
-          className="relative aspect-square w-full max-w-[560px] mx-auto pointer-events-none"
-        >
-          {/* Allow global canvas to show through cleanly */}
-          <div className="absolute inset-0 -z-10 rounded-full bg-gradient-spark opacity-25 blur-3xl" />
-        </motion.div>
-      </section>
-
-      {/* Stats */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-16">
-        <motion.div 
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-100px" }}
-          variants={containerVariants}
-          className="glass grid grid-cols-2 gap-6 rounded-3xl p-8 md:grid-cols-4"
-        >
-          {stats.map((s) => (
-            <motion.div
-              key={s.l}
-              variants={cardVariants}
-              className="text-center"
-            >
-              <div className="font-display text-4xl font-semibold text-gradient">{s.n}</div>
-              <div className="mt-1 text-xs uppercase tracking-widest text-muted-foreground">
-                {s.l}
-              </div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* Infinite technology & feature carousel */}
-      <div className="relative z-10 my-8">
-        <InfiniteCarousel />
-      </div>
-
-      {/* Features bento */}
-      <section id="features" className="relative z-10 mx-auto max-w-7xl px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
-          <motion.h2 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl font-semibold sm:text-5xl"
-          >
-            Everything you need to ship
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mt-4 text-muted-foreground"
-          >
-            Seven tools in one. Built for the AI-native era.
-          </motion.p>
-        </div>
-        <motion.div 
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={containerVariants}
-          className="mt-12 grid gap-4 md:grid-cols-3"
-        >
-          {features.map((f, i) => (
-            <motion.div
-              key={f.title}
-              variants={cardVariants}
-              whileHover={{ y: -6, scale: 1.01 }}
-              className={`glass group rounded-3xl p-6 transition-shadow hover:shadow-glow ${i === 0 ? "md:col-span-2 md:row-span-2" : ""}`}
-            >
-              <div className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-spark text-primary-foreground shadow-glow">
-                <f.icon className="h-5 w-5" />
-              </div>
-              <h3 className="mt-4 font-display text-xl font-semibold">{f.title}</h3>
-              <p className="mt-2 text-sm text-muted-foreground">{f.desc}</p>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* Pricing */}
-      <section id="pricing" className="relative z-10 mx-auto max-w-7xl px-6 py-24">
-        <div className="mx-auto max-w-2xl text-center">
-          <motion.h2 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-4xl font-semibold sm:text-5xl"
-          >
-            Simple pricing
-          </motion.h2>
-          <motion.p 
-            initial={{ opacity: 0, y: 15 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.1 }}
-            className="mt-4 text-muted-foreground"
-          >
-            Start free. Upgrade when you ship.
-          </motion.p>
-        </div>
-        <motion.div 
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true, margin: "-80px" }}
-          variants={containerVariants}
-          className="mt-12 grid gap-6 md:grid-cols-3"
-        >
-          {[
-            { name: "Free", price: "$0", feats: ["10 ideas / month", "AI chat", "Basic mentor"] },
-            {
-              name: "Pro",
-              price: "$12",
-              feats: ["Unlimited ideas", "All AI models", "Roadmaps & guides", "Priority speed"],
-              hot: true,
-            },
-            {
-              name: "Team",
-              price: "$29",
-              feats: ["Everything in Pro", "Team workspaces", "Shared projects", "SSO"],
-            },
-          ].map((p) => (
-            <motion.div
-              key={p.name}
-              variants={cardVariants}
-              whileHover={{ y: -4 }}
-              className={`glass relative rounded-3xl p-8 ${p.hot ? "ring-spark border-spark/40" : ""}`}
-            >
-              {p.hot && (
-                <div className="absolute -top-3 left-6 rounded-full bg-gradient-spark px-3 py-1 text-xs font-medium text-primary-foreground">
-                  Most popular
-                </div>
-              )}
-              <div className="font-display text-lg">{p.name}</div>
-              <div className="mt-2 font-display text-5xl font-semibold">
-                {p.price}
-                <span className="text-base text-muted-foreground">/mo</span>
-              </div>
-              <ul className="mt-6 space-y-2 text-sm">
-                {p.feats.map((f) => (
-                  <li key={f} className="flex items-center gap-2">
-                    <Check className="h-4 w-4 text-spark" />
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Magnetic>
-                <Link
-                  to="/login"
-                  className={`mt-8 inline-flex w-full justify-center rounded-xl px-4 py-2.5 text-sm font-medium ${p.hot ? "bg-gradient-spark text-primary-foreground shadow-glow" : "border border-border bg-card/50"} block text-center`}
+        {/* Cinematic Text Overlay — visible during scenes */}
+        {scrollVal < SCENE_BOUNDARY && (
+          <div className="absolute inset-0 z-10 w-full h-full pointer-events-none">
+            {SCENES.map((scene, i) => {
+              const isActive = activeScene === i;
+              let alignClass = "";
+              let xOffset = 0;
+              let yOffset = 0;
+              if (i === 0 || i === 6) {
+                alignClass = "justify-center text-center";
+                yOffset = 40;
+              } else if (i % 2 !== 0) {
+                alignClass = "justify-end text-right";
+                xOffset = 100;
+              } else {
+                alignClass = "justify-start text-left";
+                xOffset = -100;
+              }
+              return (
+                <div
+                  key={scene.id}
+                  className={`absolute inset-0 flex items-center pointer-events-none ${alignClass}`}
                 >
-                  Get started
-                </Link>
-              </Magnetic>
-            </motion.div>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="relative z-10 mx-auto max-w-3xl px-6 py-24">
-        <motion.h2 
-          initial={{ opacity: 0, y: 15 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          className="text-center text-4xl font-semibold sm:text-5xl"
-        >
-          Frequently asked
-        </motion.h2>
-        <motion.div 
-          initial="hidden"
-          whileInView="show"
-          viewport={{ once: true }}
-          variants={containerVariants}
-          className="mt-10 space-y-3"
-        >
-          {[
-            [
-              "Is it free?",
-              "Yes — you can use ProjectSpark free with monthly limits. Pro unlocks unlimited generations.",
-            ],
-            [
-              "What AI models?",
-              "We default to fast Gemini & GPT models via the Lovable AI Gateway — no API keys required.",
-            ],
-            [
-              "Can I export my projects?",
-              "Yes — every generated idea can be saved, bookmarked and shared.",
-            ],
-          ].map(([q, a]) => (
-            <motion.details
-              key={q}
-              variants={cardVariants}
-              className="glass group rounded-2xl p-5 [&_summary::-webkit-details-marker]:hidden"
-            >
-              <summary className="flex cursor-pointer items-center justify-between font-medium">
-                {q}
-                <span className="text-muted-foreground transition group-open:rotate-45">+</span>
-              </summary>
-              <p className="mt-3 text-sm text-muted-foreground">{a}</p>
-            </motion.details>
-          ))}
-        </motion.div>
-      </section>
-
-      {/* CTA */}
-      <section className="relative z-10 mx-auto max-w-7xl px-6 pb-24">
-        <motion.div 
-          initial={{ opacity: 0, scale: 0.95 }}
-          whileInView={{ opacity: 1, scale: 1 }}
-          viewport={{ once: true }}
-          transition={{ type: "spring", stiffness: 70, damping: 14 }}
-          className="glass-strong relative overflow-hidden rounded-3xl p-12 text-center"
-        >
-          <div className="absolute inset-0 bg-gradient-spark opacity-15" />
-          <Rocket className="relative mx-auto h-10 w-10 text-spark" />
-          <h2 className="relative mt-4 text-4xl font-semibold sm:text-5xl">
-            Ready to spark something?
-          </h2>
-          <p className="relative mx-auto mt-4 max-w-xl text-muted-foreground">
-            Join builders generating their next portfolio project right now.
-          </p>
-          <div className="relative mt-8 flex justify-center">
-            <Magnetic>
-              <Link
-                to="/login"
-                className="inline-flex items-center gap-2 rounded-2xl bg-gradient-spark px-6 py-3 text-sm font-medium text-primary-foreground shadow-glow"
-              >
-                Start free <ArrowRight className="h-4 w-4" />
-              </Link>
-            </Magnetic>
+                  <motion.div
+                    initial={false}
+                    animate={{
+                      opacity: isActive ? 1 : 0,
+                      x: isActive ? 0 : xOffset,
+                      y: isActive ? 0 : yOffset,
+                      filter: isActive ? "blur(0px)" : "blur(10px)",
+                      pointerEvents: isActive ? "auto" : "none",
+                    }}
+                    transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+                    className="px-8 md:px-24 w-full max-w-3xl flex flex-col pointer-events-auto"
+                    style={{
+                      alignItems:
+                        i === 0 || i === 6 ? "center" : i % 2 !== 0 ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    <div
+                      className={`flex items-center gap-3 mb-4 ${i === 0 || i === 6 ? "flex-row" : i % 2 !== 0 ? "flex-row-reverse" : "flex-row"}`}
+                    >
+                      <div className="h-[1px] w-12 bg-spark" />
+                      <span className="text-sm font-semibold tracking-[0.3em] uppercase text-spark">
+                        Scene 0{scene.id}
+                      </span>
+                    </div>
+                    <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter mb-2 bg-clip-text text-transparent bg-gradient-to-r from-white to-white/50">
+                      {scene.title}
+                    </h1>
+                    <h2 className="text-2xl md:text-3xl font-medium text-white/70 mb-6 font-display">
+                      {scene.subtitle}
+                    </h2>
+                    <p className="text-lg md:text-xl text-white/50 leading-relaxed mb-10 max-w-xl">
+                      {scene.desc}
+                    </p>
+                    <Magnetic>
+                      <PortalButton className="group inline-flex items-center gap-3 rounded-full border border-white/20 bg-white/5 px-8 py-4 text-sm font-medium backdrop-blur-xl transition-all hover:bg-white hover:text-black shadow-[0_0_20px_rgba(255,255,255,0.1)] hover:shadow-[0_0_30px_rgba(255,255,255,0.5)]">
+                        {scene.action}
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </PortalButton>
+                    </Magnetic>
+                  </motion.div>
+                </div>
+              );
+            })}
           </div>
-        </motion.div>
-      </section>
+        )}
 
-      <footer className="relative z-10 mx-auto max-w-7xl px-6 py-10">
-        <div className="flex flex-col items-center justify-between gap-4 border-t border-border pt-8 md:flex-row">
-          <Logo />
-          <div className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} ProjectSpark — Built with Lovable.
+        {/* Post-Scene-7 Core Reveal Overlay */}
+        {scrollVal >= SCENE_BOUNDARY && <PostSceneOverlay postPhase={postPhase} />}
+
+        {/* Scene Progress Dots */}
+        {scrollVal < SCENE_BOUNDARY && (
+          <div className="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-2 z-50">
+            {SCENES.map((s, i) => (
+              <button
+                key={s.id}
+                onClick={() => {
+                  window.scrollTo({ top: i * window.innerHeight, behavior: "smooth" });
+                }}
+                className={`w-1.5 h-1.5 rounded-full transition-all duration-500 ${
+                  activeScene === i
+                    ? "bg-white scale-150 shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                    : "bg-white/30 hover:bg-white/60"
+                }`}
+                aria-label={`Scene ${s.id}`}
+              />
+            ))}
           </div>
-          <a href="https://github.com" className="text-muted-foreground hover:text-foreground">
-            <Github className="h-4 w-4" />
-          </a>
-        </div>
-      </footer>
+        )}
+      </div>
     </div>
   );
 }

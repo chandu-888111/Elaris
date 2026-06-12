@@ -2,7 +2,7 @@ import React, { useRef, useState } from "react";
 import { motion, useMotionValue, useSpring, useTransform } from "framer-motion";
 
 interface Props {
-  children: React.ReactNode;
+  children?: React.ReactNode;
   className?: string;
   innerClassName?: string;
   onClick?: React.MouseEventHandler<HTMLDivElement>;

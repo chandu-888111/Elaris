@@ -1,9 +1,5 @@
 import { Link } from "@tanstack/react-router";
 import * as Icons from "lucide-react";
-import { useEffect, useState } from "react";
-import { getDomainProgress } from "@/lib/roadmap.functions";
-import { useServerFn } from "@tanstack/react-start";
-import { useAuth } from "@/lib/auth";
 
 type DomainCardProps = {
   slug: string;
@@ -14,6 +10,8 @@ type DomainCardProps = {
   icon: string;
   colorTheme: string;
   galaxyCluster: string;
+  completedCount?: number;
+  totalCount?: number;
 };
 
 // Map colorTheme key to class styles for border and glow colors
@@ -95,23 +93,9 @@ export function DomainCard({
   icon,
   colorTheme,
   galaxyCluster,
+  completedCount = 0,
+  totalCount = 0,
 }: DomainCardProps) {
-  const fetchProgress = useServerFn(getDomainProgress);
-  const { user } = useAuth();
-  const [completedCount, setCompletedCount] = useState(0);
-  const [totalCount, setTotalCount] = useState(0);
-
-  useEffect(() => {
-    if (!user) return;
-    fetchProgress({ data: { slug } })
-      .then(({ rows }) => {
-        const done = rows.filter((r) => r.status === "done").length;
-        setCompletedCount(done);
-        setTotalCount(rows.length || 0);
-      })
-      .catch(() => {});
-  }, [slug, user, fetchProgress]);
-
   const LucideIcon =
     (Icons as any)[icon] as React.ComponentType<{ className?: string }> || Icons.Code2;
   const colors = COLOR_CLASSES[colorTheme] || COLOR_CLASSES.blue;

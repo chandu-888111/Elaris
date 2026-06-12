@@ -64,6 +64,8 @@ function ResumePage() {
   const [skills, setSkills] = useState("");
   const [projects, setProjects] = useState("");
   const [education, setEducation] = useState("");
+  const [rawDetails, setRawDetails] = useState("");
+  const [template, setTemplate] = useState("Detailed");
   const [resume, setResume] = useState<Resume | null>(null);
   const [resumeId, setResumeId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -80,7 +82,7 @@ function ResumePage() {
     setResumeId(null);
     setReport(null);
     try {
-      const r = await gen({ data: { name, targetRole, experience, skills, projects, education } });
+      const r = await gen({ data: { name, targetRole, rawDetails, template } });
       setResume(r);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Generation failed");
@@ -194,34 +196,22 @@ function ResumePage() {
                 placeholder="Full Stack Engineer"
               />
             </Field>
-            <Field label="Experience (free text)">
+            <Field label="Template Style">
+              <select
+                value={template}
+                onChange={(e) => setTemplate(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-spark"
+              >
+                <option value="Detailed">Detailed (Descriptive bullets)</option>
+                <option value="Simple">Simple (Concise & Minimal)</option>
+              </select>
+            </Field>
+            <Field label="Paste Full Details (Experience, Skills, Education...)">
               <TextArea
-                value={experience}
-                onChange={setExperience}
-                rows={4}
-                placeholder="Past jobs, internships, freelance work…"
-              />
-            </Field>
-            <Field label="Skills (comma sep)">
-              <Input
-                value={skills}
-                onChange={setSkills}
-                placeholder="React, TypeScript, Postgres…"
-              />
-            </Field>
-            <Field label="Projects">
-              <TextArea
-                value={projects}
-                onChange={setProjects}
-                rows={3}
-                placeholder="Brief project names + what they do"
-              />
-            </Field>
-            <Field label="Education">
-              <Input
-                value={education}
-                onChange={setEducation}
-                placeholder="B.S. CS, Stanford, 2022"
+                value={rawDetails}
+                onChange={setRawDetails}
+                rows={12}
+                placeholder="Paste your entire raw resume, LinkedIn profile, or list of experiences here. AI will extract and structure it perfectly."
               />
             </Field>
             <button
@@ -248,7 +238,7 @@ function ResumePage() {
                   onClick={onExportPDF}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-card/60 px-3 py-2 text-xs hover:bg-card transition"
                 >
-                  <Download className="h-3.5 w-3.5" /> Export PDF
+                  <Download className="h-3.5 w-3.5" /> Download PDF
                 </button>
               </div>
             )}

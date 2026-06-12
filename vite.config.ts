@@ -6,6 +6,7 @@ import tsconfigPaths from 'vite-tsconfig-paths';
 import tailwindcss from '@tailwindcss/vite';
 import path from 'path';
 import type { RollupLog } from 'rollup';
+import { visualizer } from 'rollup-plugin-visualizer';
 
 export default defineConfig({
   plugins: [
@@ -22,6 +23,12 @@ export default defineConfig({
     }),
     nitro(),
     react(),
+    visualizer({
+      filename: 'stats.html',
+      template: 'treemap',
+      gzipSize: true,
+      brotliSize: true,
+    }),
   ],
   resolve: {
     alias: {
@@ -50,7 +57,11 @@ export default defineConfig({
       output: {
         manualChunks(id: string) {
           if (id.includes('node_modules')) {
+            if (id.includes('three') || id.includes('@react-three')) return 'three';
+            if (id.includes('gsap')) return 'gsap';
+            if (id.includes('framer-motion')) return 'framer-motion';
             if (id.includes('recharts')) return 'recharts';
+            if (id.includes('@ai-sdk') || id.includes('ai')) return 'ai';
             return 'vendor';
           }
         },

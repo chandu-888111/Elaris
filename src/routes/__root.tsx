@@ -10,9 +10,9 @@ import {
 } from "@tanstack/react-router";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/lib/auth";
-import { motion } from "framer-motion";
-import GlobalCanvas from "@/components/GlobalCanvas";
+import { motion, AnimatePresence } from "framer-motion";
 import CustomCursor from "@/components/CustomCursor";
+import { PageTransition } from "@/components/PageTransition";
 
 import appCss from "../styles.css?url";
 
@@ -142,17 +142,20 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        <GlobalCanvas />
         <CustomCursor />
-        <motion.div
-          key={location.pathname}
-          initial={{ opacity: 0, y: 10, scale: 0.995 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-          className="min-h-screen"
-        >
-          <Outlet />
-        </motion.div>
+        <PageTransition location={location.pathname} />
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={location.pathname}
+            initial={{ opacity: 0, y: 10, scale: 0.995 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, scale: 1.05, filter: "blur(10px)" }}
+            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            className="min-h-screen"
+          >
+            <Outlet />
+          </motion.div>
+        </AnimatePresence>
         <Toaster theme="dark" position="top-right" richColors />
       </AuthProvider>
     </QueryClientProvider>

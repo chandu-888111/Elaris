@@ -1,10 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PageShell, PageHeader } from "@/components/PageHeader";
 import { Trophy, Search } from "lucide-react";
 import { DOMAINS, CATEGORIES } from "@/lib/domains";
 import { DomainCard } from "@/components/DomainCard";
 import { SEED_ROADMAPS } from "@/lib/roadmap-catalog";
+import { getAllDomainsProgress } from "@/lib/roadmap.functions";
+import { useServerFn } from "@tanstack/react-start";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_app/resources")({
   head: () => ({ meta: [{ title: "Resources Hub — ProjectSpark" }] }),
@@ -14,6 +17,19 @@ export const Route = createFileRoute("/_app/resources")({
 function Resources() {
   const [q, setQ] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const { user } = useAuth();
+  const fetchAllProgress = useServerFn(getAllDomainsProgress);
+  const [progressMap, setProgressMap] = useState<
+    Record<string, { completedCount: number; totalCount: number }>
+  >({});
+
+  // Single batch fetch for ALL domain progress
+  useEffect(() => {
+    if (!user) return;
+    fetchAllProgress({})
+      .then(({ progress }) => setProgressMap(progress))
+      .catch(() => {});
+  }, [user, fetchAllProgress]);
 
   // Filters domains based on search query (matching name, category, blurb, tags, or roadmap node titles)
   const filtered = DOMAINS.filter((d) => {
@@ -102,7 +118,12 @@ function Resources() {
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {filtered.map((d) => (
-          <DomainCard key={d.slug} {...d} />
+          <DomainCard
+            key={d.slug}
+            {...d}
+            completedCount={progressMap[d.slug]?.completedCount ?? 0}
+            totalCount={progressMap[d.slug]?.totalCount ?? 0}
+          />
         ))}
         {filtered.length === 0 && (
           <div className="col-span-full py-16 text-center text-sm text-muted-foreground glass rounded-3xl">

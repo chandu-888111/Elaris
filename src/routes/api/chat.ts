@@ -13,17 +13,25 @@ export const Route = createFileRoute("/api/chat")({
         if (!Array.isArray(messages)) {
           return new Response("messages required", { status: 400 });
         }
+        // Filter out empty messages (e.g., from previous failed streams) to prevent provider validation errors
+        const validMessages = messages.filter((m: any) => {
+          if (typeof m.content === "string") return m.content.trim().length > 0;
+          if (Array.isArray(m.parts)) {
+            return m.parts.some((p: any) => p.type === "text" && p.text && p.text.trim().length > 0) || m.parts.some((p: any) => p.type !== "text");
+          }
+          return false;
+        });
 
         try {
           const result = await streamTextResilient({
             system:
               "You are ProjectSpark AI — a brilliant, encouraging mentor for students, developers, and engineers. Help with project ideas, learning roadmaps, code, and architecture. Use markdown with code blocks when helpful.",
-            messages: await convertToModelMessages(messages as UIMessage[]),
+            messages: await convertToModelMessages(validMessages as UIMessage[]),
             abortSignal: request.signal,
           });
 
           return result.toUIMessageStreamResponse({
-            originalMessages: messages as UIMessage[],
+            originalMessages: validMessages as UIMessage[],
           });
         } catch (error) {
           console.warn("[api/chat] LLM streaming failed, falling back to mock response:", error);

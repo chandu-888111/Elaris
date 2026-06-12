@@ -52,7 +52,7 @@ function SettingsPage() {
     setBusy(true);
     try {
       // Try database RPC first (bypasses SUPABASE_SERVICE_ROLE_KEY environment variable mismatch issues)
-      const { error: rpcError } = await supabase.rpc("delete_user_account");
+      const { error: rpcError } = await supabase.rpc("delete_user_account" as any);
       
       if (rpcError) {
         console.warn("[settings] RPC deletion failed, falling back to server function:", rpcError);

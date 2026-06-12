@@ -70,7 +70,7 @@ export function NodeDrawer({
   onStatusChange,
 }: NodeDrawerProps) {
   const [activeTab, setActiveTab] = useState<
-    "learn" | "resources" | "build" | "guide" | "mindmap" | "interview" | "notes" | "projects" | "mentor"
+    "learn" | "resources" | "build" | "guide" | "mindmap" | "notes" | "projects" | "mentor"
   >("learn");
   const fetchStudyGuide = useServerFn(generateNodeStudyGuide);
   const fetchResourcesAndMindmap = useServerFn(generateNodeResourcesAndMindmap);
@@ -217,7 +217,7 @@ export function NodeDrawer({
           const category = b.category.toLowerCase();
           
           const directMatch = title.includes(normalizedNodeTitle) || category.includes(normalizedNodeTitle);
-          const keyMatch = key ? (title.includes(key.toLowerCase()) || category.includes(key.toLowerCase())) : false;
+          const keyMatch = key ? (new RegExp(`\\b${key.toLowerCase()}\\b`).test(title) || new RegExp(`\\b${key.toLowerCase()}\\b`).test(category)) : false;
           
           return directMatch || keyMatch;
         });
@@ -607,7 +607,7 @@ export function NodeDrawer({
 
         {/* Navigation Tabs */}
         <div className="flex border-b border-white/5 px-4 text-xs font-medium overflow-x-auto scrollbar-none flex-nowrap" data-lenis-prevent>
-          {(["learn", "resources", "build", "guide", "mindmap", "interview", "notes", "projects", "mentor"] as const).map((tab) => (
+          {(["learn", "resources", "build", "guide", "mindmap", "notes", "projects", "mentor"] as const).map((tab) => (
             <button
               key={tab}
               onMouseEnter={playHover}
@@ -627,11 +627,9 @@ export function NodeDrawer({
                   ? "AI Mentor"
                   : tab === "mindmap"
                     ? "Mindmap"
-                    : tab === "interview"
-                      ? "Interview Prep"
-                      : tab === "notes"
-                        ? "Personal Notes"
-                        : tab === "build"
+                    : tab === "notes"
+                      ? "Personal Notes"
+                      : tab === "build"
                           ? "Build (BYOX)"
                           : tab}
               {activeTab === tab && (
@@ -767,6 +765,8 @@ export function NodeDrawer({
               )}
 
               {(() => {
+                if (dynamicLoading) return null;
+
                 const resources = dynamicData?.resources || node.resources || [];
                 if (resources.length > 0) {
                   return (
@@ -1488,53 +1488,7 @@ export function NodeDrawer({
             </div>
           )}
 
-          {/* INTERVIEW PREP TAB */}
-          {activeTab === "interview" && (
-            <div className="space-y-4">
-              <div className="rounded-2xl border border-white/5 bg-white/5 p-4">
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-spark mb-1">
-                  Interview Readiness Cockpit
-                </h4>
-                <p className="text-[11px] text-muted-foreground font-sans">
-                  Common interview questions for {node.title}. Click any question to reveal a comprehensive answer.
-                </p>
-              </div>
 
-              <div className="space-y-2">
-                {(() => {
-                  const key = matchKey(node.title) || matchKey(domainSlug) || matchKey(node.id);
-                  const questions = getFallbackInterviewQuestions(node.title, key);
-                  
-                  return questions.map((q, idx) => {
-                    const isExpanded = expandedQuestionIdx === idx;
-                    return (
-                      <div
-                        key={idx}
-                        className="rounded-2xl border border-white/5 bg-card/45 overflow-hidden transition-all"
-                      >
-                        <button
-                          onClick={() => setExpandedQuestionIdx(isExpanded ? null : idx)}
-                          className="flex w-full items-center justify-between p-4 text-left text-xs font-semibold text-foreground hover:bg-white/5"
-                        >
-                          <span>{idx + 1}. {q.question}</span>
-                          <Icons.ChevronDown
-                            className={`h-4 w-4 text-muted-foreground transition ${
-                              isExpanded ? "rotate-180 text-foreground" : ""
-                            }`}
-                          />
-                        </button>
-                        {isExpanded && (
-                          <div className="border-t border-white/5 bg-white/2 p-4 text-xs text-muted-foreground leading-relaxed">
-                            <p>{q.answer}</p>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  });
-                })()}
-              </div>
-            </div>
-          )}
 
           {/* PERSONAL NOTES TAB */}
           {activeTab === "notes" && (

@@ -143,7 +143,7 @@ function ChatLayout() {
   return (
     <div className="flex h-full overflow-hidden">
       {/* Desktop Sidebar */}
-      <aside className="hidden w-72 shrink-0 flex-col border-r border-border bg-sidebar/40 backdrop-blur md:flex">
+      <aside className="glass hidden w-72 shrink-0 flex-col md:flex">
         <ThreadList />
       </aside>
 
@@ -151,7 +151,7 @@ function ChatLayout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden" onClick={() => setMobileOpen(false)}>
           <div
-            className="w-72 flex flex-col border-r border-border bg-background/95 backdrop-blur-xl shadow-2xl"
+            className="glass w-72 flex flex-col shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
             <ThreadList />

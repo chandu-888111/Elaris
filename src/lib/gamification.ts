@@ -7,9 +7,37 @@ export type XPReward = {
   newLevel: number;
 };
 
+// Developer Galaxy Progression System
+export const PLANETARY_LEVELS = [
+  { xp: 0, name: "Earth", color: "#3b82f6", type: "Planet" },
+  { xp: 1000, name: "Moon", color: "#9ca3af", type: "Satellite" },
+  { xp: 3000, name: "Mars", color: "#ef4444", type: "Planet" },
+  { xp: 10000, name: "Jupiter", color: "#f59e0b", type: "Gas Giant" },
+  { xp: 25000, name: "Saturn", color: "#fbbf24", type: "Gas Giant" },
+  { xp: 50000, name: "Uranus", color: "#06b6d4", type: "Ice Giant" },
+  { xp: 75000, name: "Neptune", color: "#3b82f6", type: "Ice Giant" },
+  { xp: 100000, name: "Alpha Centauri", color: "#fde047", type: "Star System" },
+  { xp: 250000, name: "Andromeda", color: "#c084fc", type: "Galaxy" },
+  { xp: 500000, name: "Milky Way Core", color: "#f87171", type: "Supermassive Core" },
+  { xp: 1000000, name: "Quantum Realm", color: "#a855f7", type: "Dimension" },
+];
+
+export function getPlanetForXP(xp: number) {
+  let current = PLANETARY_LEVELS[0];
+  let next = PLANETARY_LEVELS[1];
+  for (let i = 0; i < PLANETARY_LEVELS.length; i++) {
+    if (xp >= PLANETARY_LEVELS[i].xp) {
+      current = PLANETARY_LEVELS[i];
+      next = PLANETARY_LEVELS[Math.min(i + 1, PLANETARY_LEVELS.length - 1)];
+    } else {
+      break;
+    }
+  }
+  return { current, next };
+}
+
 /**
  * Awards XP to the current user, updates their streak, and shows an animated toast.
- * Safe to call from anywhere on the client.
  */
 export async function awardXP(amount: number, reason: string): Promise<XPReward | null> {
   try {
@@ -25,11 +53,15 @@ export async function awardXP(amount: number, reason: string): Promise<XPReward 
     const reward: XPReward = {
       newXp: row.new_xp,
       newStreak: row.new_streak,
-      newLevel: row.new_level,
+      newLevel: row.new_level, // We keep the base level logic for database compatibility
     };
+    
+    const { current, next } = getPlanetForXP(reward.newXp);
+    
     toast.success(`+${amount} XP — ${reason}`, {
-      description: `🔥 ${reward.newStreak}-day streak · Level ${reward.newLevel} · ${reward.newXp} XP`,
+      description: `🔥 ${reward.newStreak}-day streak · ${current.name} Orbit · ${reward.newXp} XP`,
       duration: 3500,
+      icon: "🚀"
     });
     return reward;
   } catch (e) {
@@ -39,7 +71,7 @@ export async function awardXP(amount: number, reason: string): Promise<XPReward 
 }
 
 /**
- * Unlocks an achievement (idempotent thanks to UNIQUE constraint).
+ * Unlocks an achievement. Constellations will connect unlocked achievements in the Dashboard.
  */
 export async function unlockAchievement(opts: {
   code: string;
@@ -59,13 +91,13 @@ export async function unlockAchievement(opts: {
     icon: opts.icon ?? "trophy",
     xp_awarded: xp,
   });
-  // Ignore unique-violation (already unlocked)
+  
   if (error && !error.message.includes("duplicate")) {
     console.error("[achievement]", error);
     return;
   }
   if (!error) {
-    await awardXP(xp, `Achievement: ${opts.title}`);
+    await awardXP(xp, `Constellation Unlocked: ${opts.title}`);
   }
 }
 

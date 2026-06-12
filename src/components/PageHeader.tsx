@@ -31,6 +31,6 @@ export function PageHeader({
   );
 }
 
-export function PageShell({ children }: { children: ReactNode }) {
-  return <div className="relative mx-auto max-w-6xl px-6 py-10">{children}</div>;
+export function PageShell({ children, className }: { children: ReactNode; className?: string }) {
+  return <div className={`relative mx-auto max-w-6xl px-6 py-10 ${className || ""}`}>{children}</div>;
 }

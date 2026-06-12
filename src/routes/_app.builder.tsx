@@ -346,7 +346,7 @@ function BuilderPage() {
                         <span>Prompt AI Sandbox</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground leading-normal">
-                        Iterate on your project prototype just like in Bolt, Lovable, or v0! Ask the AI to change styles, add features, or refine behaviors.
+                        Iterate on your project prototype just like in Bolt, or v0! Ask the AI to change styles, add features, or refine behaviors.
                       </p>
                       <textarea
                         value={prototypePrompt}
