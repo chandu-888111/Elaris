@@ -1,7 +1,7 @@
 // src/hooks/useThemeStore.ts
-import { create } from 'zustand';
+import { create } from "zustand";
 
-export type Theme = 'dark' | 'light';
+export type Theme = "dark" | "light";
 
 interface ThemeState {
   theme: Theme;
@@ -10,7 +10,7 @@ interface ThemeState {
 }
 
 export const useThemeStore = create<ThemeState>((set) => ({
-  theme: 'dark',
-  toggle: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+  theme: "dark",
+  toggle: () => set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" })),
   setTheme: (t) => set({ theme: t }),
 }));

@@ -1,160 +1,188 @@
-import { useState, useEffect, useCallback } from "react";
+// src/hooks/use-scene-store.ts
+import * as THREE from "three";
+import { create } from "zustand";
+import { devtools } from "zustand/middleware";
+import { PARTICLE_COUNTS } from "@/constants/particleConstants";
 
-export type SceneMode =
-  | "landing"
-  | "dashboard"
-  | "roadmap"
-  | "study-guide"
-  | "chat"
-  | "mentor"
-  | "analytics"
-  | "default";
+type GraphicsMode = "ultra" | "high" | "low";
+
+type CameraMode = "chase" | "side" | "orbit" | "flyby" | "pullback" | "dramatic";
+
+type ShipMode = "idle" | "cruise" | "boost" | "reverse";
 
 export interface SceneState {
-  currentScene: SceneMode;
-  cameraPosition: [number, number, number];
-  cameraLookAt: [number, number, number];
-  particlesIntensity: number;
+  // Preloader state (global)
+  preloaderDismissed: boolean;
+  setPreloaderDismissed: (value: boolean) => void;
+  // New fields for global canvas
+  sunRef: THREE.Mesh | null;
+  setSunRef: (ref: THREE.Mesh | null) => void;
   glowColor: string;
-  isTransitioning: boolean;
+  setGlowColor: (color: string) => void;
+  currentScene: string;
+  setCurrentScene: (scene: string) => void;
+  particlesIntensity: number;
+  setParticlesIntensity: (intensity: number) => void;
+  // Core graphics
+  graphicsMode: GraphicsMode;
+  graphicsModeLocked: boolean;
+
   coreScale: number;
-  rotationSpeed: number;
-  postScenePhase: number; // 0=none, 1=zoom-in, 2=stars/asteroids, 3=collision, 4=galaxy
+  setCoreScale: (value: number) => void;
+  // Accessibility flags
+  reduceMotion: boolean;
+  prefersReducedTransparency: boolean;
+  keyboardNavigation: boolean;
+  screenReaderMode: boolean;
+
+  // Cursor & scroll
+  cursorPos: { x: number; y: number };
+  scrollProgress: number; // 0‑1 normalized
+
+  // Chapter handling
+  activeChapterId: string | null;
+  visitedChapters: string[];
+  unlockedEasterEggs: string[];
+
+  // Ship physics & state
+  shipVelocity: number;
+  shipBankAngle: number;
+  shipMode: ShipMode;
+
+  // Event system
+  eventQueue: string[];
+
+  // Audio mute state
+  audioMuted: boolean;
+
+  // Dynamic time system (0 → 1 throughout the scroll narrative)
+  timeOfUniverse: number;
+
+  // HUD visibility (dev only by default)
+  hudVisible: boolean;
+  // Camera mode
+  cameraMode: CameraMode;
+  cameraPosition: [number, number, number];
+  // Setters (exposed for external modules)
+  setGraphicsMode: (mode: GraphicsMode) => void;
+  lockGraphicsMode: (locked: boolean) => void;
+  setCameraMode: (mode: CameraMode) => void;
+  setHudVisible: (visible: boolean) => void;
+  setScene: (scene: string) => void;
+  /**
+   * TEMPORARY migration helper.
+   * Replace with dedicated setters before Phase 3.
+   */
+  setState: (partial: Partial<SceneState>) => void;
+  // setScene: (scene: string) => void;
+
+  setReduceMotion: (value: boolean) => void;
+  setPrefersReducedTransparency: (value: boolean) => void;
+  setKeyboardNavigation: (value: boolean) => void;
+  setScreenReaderMode: (value: boolean) => void;
+  setCursorPos: (x: number, y: number) => void;
+  setScrollProgress: (progress: number) => void;
+  setActiveChapterId: (id: string | null) => void;
+  addVisitedChapter: (id: string) => void;
+  addUnlockedEasterEgg: (id: string) => void;
+  setShipVelocity: (v: number) => void;
+  setShipBankAngle: (a: number) => void;
+  setShipMode: (mode: ShipMode) => void;
+  enqueueEvent: (event: string) => void;
+  dequeueEvent: (event: string) => void;
+  setAudioMuted: (m: boolean) => void;
+  setTimeOfUniverse: (t: number) => void;
 }
 
-let state: SceneState = {
-  currentScene: "default",
-  cameraPosition: [0, 0, 8],
-  cameraLookAt: [0, 0, 0],
-  particlesIntensity: 0.5,
-  glowColor: "#a78bfa",
-  isTransitioning: false,
-  coreScale: 1.0,
-  rotationSpeed: 0.1,
-  postScenePhase: 0,
-};
-
-const listeners = new Set<(s: SceneState) => void>();
-
-export const sceneStore = {
-  getState() {
-    return state;
-  },
-  setState(updates: Partial<SceneState>) {
-    state = { ...state, ...updates };
-    listeners.forEach((l) => l(state));
-  },
-  subscribe(listener: (s: SceneState) => void) {
-    listeners.add(listener);
-    return () => {
-      listeners.delete(listener);
-    };
-  },
-  setScene(scene: SceneMode) {
-    if (state.currentScene === scene) return;
-    const config: Partial<SceneState> = { currentScene: scene };
-
-    switch (scene) {
-      case "landing":
-        config.cameraPosition = [0, 0, 4.0];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#c084fc";
-        config.particlesIntensity = 1.0;
-        config.coreScale = 1.25;
-        config.rotationSpeed = 0.15;
-        break;
-      case "dashboard":
-        config.cameraPosition = [-2.5, 1.2, 4.0];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#38bdf8";
-        config.particlesIntensity = 0.45;
-        config.coreScale = 0.85;
-        config.rotationSpeed = 0.08;
-        break;
-      case "roadmap":
-        config.cameraPosition = [0, 3.8, 5.0];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#818cf8";
-        config.particlesIntensity = 0.6;
-        config.coreScale = 0.95;
-        config.rotationSpeed = 0.05;
-        break;
-      case "study-guide":
-        config.cameraPosition = [2.2, -0.8, 4.8];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#34d399";
-        config.particlesIntensity = 0.5;
-        config.coreScale = 0.9;
-        config.rotationSpeed = 0.07;
-        break;
-      case "chat":
-        config.cameraPosition = [2.5, 0.2, 3.8];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#a78bfa";
-        config.particlesIntensity = 0.85;
-        config.coreScale = 1.15;
-        config.rotationSpeed = 0.22;
-        break;
-      case "mentor":
-        config.cameraPosition = [-2.2, 0.7, 3.8];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#ec4899";
-        config.particlesIntensity = 0.75;
-        config.coreScale = 1.0;
-        config.rotationSpeed = 0.18;
-        break;
-      case "analytics":
-        config.cameraPosition = [0, 0.4, 5.5];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#06b6d4";
-        config.particlesIntensity = 1.2;
-        config.coreScale = 0.7;
-        config.rotationSpeed = 0.03;
-        break;
-      default:
-        config.cameraPosition = [0, 0, 8];
-        config.cameraLookAt = [0, 0, 0];
-        config.glowColor = "#a78bfa";
-        config.particlesIntensity = 0.5;
-        config.coreScale = 1.0;
-        config.rotationSpeed = 0.1;
-    }
-
-    this.setState(config);
-  },
-};
-
-export function useSceneStore() {
-  const [current, setCurrent] = useState<SceneState>(state);
-
-  useEffect(() => {
-    return sceneStore.subscribe((s) => {
-      setCurrent(s);
-    });
-  }, []);
-
-  const setScene = useCallback((scene: SceneMode) => {
-    sceneStore.setScene(scene);
-  }, []);
-
-  const setCamera = useCallback(
-    (pos: [number, number, number], lookAt?: [number, number, number]) => {
-      sceneStore.setState({
-        cameraPosition: pos,
-        cameraLookAt: lookAt ?? state.cameraLookAt,
-      });
+export const useSceneStore = create<SceneState>()(
+  devtools((set, get) => ({
+    graphicsMode: "high",
+    graphicsModeLocked: false,
+    cameraMode: "chase",
+    cameraPosition: [0, 0, 0],
+    reduceMotion: false,
+    prefersReducedTransparency: false,
+    keyboardNavigation: false,
+    screenReaderMode: false,
+    cursorPos: { x: 0, y: 0 },
+    scrollProgress: 0,
+    activeChapterId: null,
+    visitedChapters: [],
+    unlockedEasterEggs: [],
+    shipVelocity: 0,
+    shipBankAngle: 0,
+    shipMode: "idle",
+    eventQueue: [],
+    audioMuted: true,
+    timeOfUniverse: 0,
+    hudVisible: import.meta.env.DEV ? true : false,
+    // New setters for global UI flags
+    setPreloaderDismissed: (value: boolean) => set({ preloaderDismissed: value }),
+    setHudVisible: (visible: boolean) => set({ hudVisible: visible }),
+    // TODO: Temporary migration helper – replace with specific setters later
+    setState: (partial) => set((state) => ({ ...state, ...partial })),
+    // Shortcut for currentScene
+    setScene: (scene: string) => set({ currentScene: scene }),
+    preloaderDismissed: false,
+    // New defaults
+    sunRef: null,
+    glowColor: "#00e5ff",
+    currentScene: "default",
+    particlesIntensity: 1,
+    coreScale: 1,
+    setCoreScale: (value: number) => set({ coreScale: value }),
+    setGraphicsMode: (mode: GraphicsMode) => {
+      const state = get() as SceneState;
+      if (!state.graphicsModeLocked) set({ graphicsMode: mode });
     },
-    [],
-  );
+    lockGraphicsMode: (locked: boolean) => set({ graphicsModeLocked: locked }),
+    setCameraMode: (mode: CameraMode) => set({ cameraMode: mode }),
+    setSunRef: (ref: THREE.Mesh | null) => set({ sunRef: ref }),
+    setGlowColor: (color: string) => set({ glowColor: color }),
+    setCurrentScene: (scene: string) => set({ currentScene: scene }),
+    setParticlesIntensity: (intensity: number) => set({ particlesIntensity: intensity }),
+    setReduceMotion: (value: boolean) => set({ reduceMotion: value }),
+    setPrefersReducedTransparency: (value: boolean) => set({ prefersReducedTransparency: value }),
+    setKeyboardNavigation: (value: boolean) => set({ keyboardNavigation: value }),
+    setScreenReaderMode: (value: boolean) => set({ screenReaderMode: value }),
+    setCursorPos: (x: number, y: number) => set({ cursorPos: { x, y } }),
+    setScrollProgress: (progress: number) => set({ scrollProgress: progress }),
+    setActiveChapterId: (id: string | null) => set({ activeChapterId: id }),
+    addVisitedChapter: (id: string) => {
+      const list = get().visitedChapters;
+      if (!list.includes(id)) set({ visitedChapters: [...list, id] });
+    },
+    addUnlockedEasterEgg: (id: string) => {
+      const list = get().unlockedEasterEggs;
+      if (!list.includes(id)) set({ unlockedEasterEggs: [...list, id] });
+    },
+    setShipVelocity: (v: number) => set({ shipVelocity: v }),
+    setShipBankAngle: (a: number) => set({ shipBankAngle: a }),
+    setShipMode: (mode: ShipMode) => set({ shipMode: mode }),
+    enqueueEvent: (event: string) => set((state) => ({ eventQueue: [...state.eventQueue, event] })),
+    dequeueEvent: (event: string) =>
+      set((state) => ({ eventQueue: state.eventQueue.filter((e) => e !== event) })),
+    setAudioMuted: (m: boolean) => set({ audioMuted: m }),
+    setTimeOfUniverse: (t: number) => set({ timeOfUniverse: t }),
+  })),
+);
 
-  const setState = useCallback((updates: Partial<SceneState>) => {
-    sceneStore.setState(updates);
-  }, []);
+// Export a direct reference for parts of the codebase that need the full store instance
+export const sceneStore = useSceneStore;
 
-  return {
-    ...current,
-    setScene,
-    setCamera,
-    setState,
-  };
-}
+// Lightweight selector for HUD to avoid unnecessary re-renders
+export const useHudState = () =>
+  useSceneStore((s) => ({
+    graphicsMode: s.graphicsMode,
+    cameraMode: s.cameraMode,
+    shipMode: s.shipMode,
+    hudVisible: s.hudVisible,
+    particleCount: PARTICLE_COUNTS[s.graphicsMode],
+    shipVelocity: s.shipVelocity,
+    shipBankAngle: s.shipBankAngle,
+    reduceMotion: s.reduceMotion,
+    prefersReducedTransparency: s.prefersReducedTransparency,
+    audioMuted: s.audioMuted,
+    scrollProgress: s.scrollProgress,
+    // Additional metrics can be added as needed
+  }));

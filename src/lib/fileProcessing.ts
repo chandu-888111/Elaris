@@ -5,7 +5,7 @@
  * Supports PDF (via pdfjs-dist), DOCX (via mammoth), and plain text files.
  */
 
-// @ts-ignore
+// @ts-expect-error - legacy PDF.js import has no declarations
 import * as pdfjs from "pdfjs-dist/legacy/build/pdf";
 import mammoth from "mammoth";
 
@@ -20,7 +20,12 @@ export async function extractTextFromPDF(file: File): Promise<string> {
   for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
     const page = await pdf.getPage(pageNum);
     const content = await page.getTextContent();
-    const strings = content.items.map((item: any) => item.str);
+    const strings = content.items
+      .filter(
+        (item: unknown): item is { str: string } =>
+          typeof item === "object" && item !== null && "str" in item,
+      )
+      .map((item: { str: string }) => item.str);
     fullText += strings.join(" ") + "\n";
   }
   return fullText.trim();
@@ -46,7 +51,9 @@ export async function extractTextFromTXT(file: File): Promise<string> {
  * Process an array of uploaded files and return their extracted text.
  * Returns an array of objects `{ file, text }` preserving order.
  */
-export async function processUploadedFiles(files: File[]): Promise<Array<{ file: File; text: string }>> {
+export async function processUploadedFiles(
+  files: File[],
+): Promise<Array<{ file: File; text: string }>> {
   const results: Array<{ file: File; text: string }> = [];
   for (const f of files) {
     const ext = f.name.split(".").pop()?.toLowerCase();

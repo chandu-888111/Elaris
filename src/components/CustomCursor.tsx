@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { useSceneStore } from "@/hooks/use-scene-store";
 
 // Detect touch/mobile devices — custom cursor should not render on them
 function isTouchDevice() {
@@ -9,7 +8,6 @@ function isTouchDevice() {
 }
 
 export function CustomCursor() {
-  const store = useSceneStore();
   const [isVisible, setIsVisible] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   // Don't render at all on touch/mobile devices
@@ -74,7 +72,7 @@ export function CustomCursor() {
       window.removeEventListener("mousemove", handleMove);
       document.removeEventListener("mouseleave", handleLeave);
     };
-  }, [isVisible, isTouch]);
+  }, [isVisible, isTouch, mouseX, mouseY]);
 
   // Never render on touch devices
   if (isTouch || !isVisible) return null;
@@ -88,7 +86,7 @@ export function CustomCursor() {
           y: trail3Y,
           translateX: "-50%",
           translateY: "-50%",
-          backgroundColor: store.glowColor,
+          backgroundColor: "#00e5ff",
           opacity: 0.2,
           scale: isHovered ? 1.6 : 1.2,
         }}
@@ -100,7 +98,7 @@ export function CustomCursor() {
           y: trail2Y,
           translateX: "-50%",
           translateY: "-50%",
-          backgroundColor: store.glowColor,
+          backgroundColor: "#00e5ff",
           opacity: 0.35,
           scale: isHovered ? 1.2 : 0.8,
         }}
@@ -112,7 +110,7 @@ export function CustomCursor() {
           y: trail1Y,
           translateX: "-50%",
           translateY: "-50%",
-          backgroundColor: store.glowColor,
+          backgroundColor: "#00e5ff",
           opacity: 0.55,
           scale: isHovered ? 0.8 : 0.5,
         }}
@@ -125,11 +123,11 @@ export function CustomCursor() {
           y: springY,
           translateX: "-50%",
           translateY: "-50%",
-          borderColor: store.glowColor,
-          boxShadow: `0 0 20px ${store.glowColor}50, inset 0 0 10px ${store.glowColor}20`,
+          borderColor: "#00e5ff",
+          boxShadow: `0 0 20px #00e5ff50, inset 0 0 10px #00e5ff20`,
           scale: isHovered ? 1.6 : 1.0,
         }}
-        className="absolute h-9 w-9 rounded-full border border-white/20 bg-white/5 opacity-80 backdrop-blur-[1px] transition-all duration-300 ease-out"
+        className="absolute h-9 w-9 rounded-full border border-white/20 bg-white/5 opacity-80 backdrop-blur-md transition-all duration-300 ease-out"
       />
       {/* Responsive center dot */}
       <motion.div
@@ -138,7 +136,7 @@ export function CustomCursor() {
           y: mouseY,
           translateX: "-50%",
           translateY: "-50%",
-          backgroundColor: store.glowColor,
+          backgroundColor: "#00e5ff",
           scale: isHovered ? 0.5 : 1.0,
         }}
         className="absolute h-1.5 w-1.5 rounded-full transition-colors duration-500"

@@ -87,7 +87,7 @@ export function SearchPalette() {
       onClick={() => setOpen(false)}
     >
       <div
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-card/95 shadow-glow backdrop-blur-xl animate-in fade-in zoom-in-95 duration-200"
+        className="w-full max-w-lg overflow-hidden rounded-2xl border border-white/10 bg-card/95 shadow-glow backdrop-blur-md animate-in fade-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
         <Command label="Global Command Palette">
@@ -154,8 +154,11 @@ export function SearchPalette() {
               >
                 <div className="mt-1.5 space-y-0.5">
                   {matchedDomains.map((d) => {
-                    const DynIcon =
-                      (Icons as any)[d.icon] as React.ComponentType<{ className?: string }> || Icons.Code2;
+                    const iconsRecord = Icons as unknown as Record<
+                      string,
+                      React.ComponentType<{ className?: string }>
+                    >;
+                    const DynIcon = iconsRecord[d.icon] || Icons.Code2;
                     return (
                       <Item
                         key={d.slug}

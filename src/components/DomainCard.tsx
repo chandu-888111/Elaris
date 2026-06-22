@@ -96,8 +96,11 @@ export function DomainCard({
   completedCount = 0,
   totalCount = 0,
 }: DomainCardProps) {
-  const LucideIcon =
-    (Icons as any)[icon] as React.ComponentType<{ className?: string }> || Icons.Code2;
+  const iconsRecord = Icons as unknown as Record<
+    string,
+    React.ComponentType<{ className?: string }>
+  >;
+  const LucideIcon = iconsRecord[icon] || Icons.Code2;
   const colors = COLOR_CLASSES[colorTheme] || COLOR_CLASSES.blue;
 
   const progressPercentage = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;

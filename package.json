@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "vite build && node copy-output.js",
     "preview": "vite preview",
-    "start": "vite preview"
+    "start": "vite preview",
+    "lint": "eslint src --ext .tsx,.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.81",

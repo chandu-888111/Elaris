@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, type ComponentType } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell, PageHeader } from "@/components/PageHeader";
@@ -12,12 +12,48 @@ export const Route = createFileRoute("/_app/profile")({
 });
 
 const ALL_ACHIEVEMENTS = [
-  { code: "first-project", title: "First Spark", description: "Generate your first AI project idea.", icon: "Sparkles", xp: 50 },
-  { code: "save-roadmap", title: "Curriculum Architect", description: "Design and save a custom career roadmap.", icon: "Compass", xp: 50 },
-  { code: "save-study", title: "Focused Learner", description: "Create and save a weekly study guide.", icon: "GraduationCap", xp: 50 },
-  { code: "save-blueprint", title: "AI Builder Pro", description: "Generate a production code blueprint.", icon: "Code2", xp: 75 },
-  { code: "first-chat", title: "Curious Mind", description: "Initiate a chat discussion with AI.", icon: "MessageSquare", xp: 50 },
-  { code: "perfect-quiz", title: "Perfect Score", description: "Answer all mini-quiz questions correctly.", icon: "Brain", xp: 75 }
+  {
+    code: "first-project",
+    title: "First Spark",
+    description: "Generate your first AI project idea.",
+    icon: "Sparkles",
+    xp: 50,
+  },
+  {
+    code: "save-roadmap",
+    title: "Curriculum Architect",
+    description: "Design and save a custom career roadmap.",
+    icon: "Compass",
+    xp: 50,
+  },
+  {
+    code: "save-study",
+    title: "Focused Learner",
+    description: "Create and save a weekly study guide.",
+    icon: "GraduationCap",
+    xp: 50,
+  },
+  {
+    code: "save-blueprint",
+    title: "AI Builder Pro",
+    description: "Generate a production code blueprint.",
+    icon: "Code2",
+    xp: 75,
+  },
+  {
+    code: "first-chat",
+    title: "Curious Mind",
+    description: "Initiate a chat discussion with AI.",
+    icon: "MessageSquare",
+    xp: 50,
+  },
+  {
+    code: "perfect-quiz",
+    title: "Perfect Score",
+    description: "Answer all mini-quiz questions correctly.",
+    icon: "Brain",
+    xp: 75,
+  },
 ];
 
 function Profile() {
@@ -37,7 +73,7 @@ function Profile() {
     (async () => {
       const [profileRes, achievementsRes] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).maybeSingle(),
-        supabase.from("achievements").select("code").eq("user_id", user.id)
+        supabase.from("achievements").select("code").eq("user_id", user.id),
       ]);
 
       if (profileRes.data) {
@@ -50,7 +86,7 @@ function Profile() {
       }
 
       if (achievementsRes.data) {
-        setUnlocked(achievementsRes.data.map(a => a.code));
+        setUnlocked(achievementsRes.data.map((a) => a.code));
       }
 
       setLoading(false);
@@ -106,7 +142,9 @@ function Profile() {
               )}
             </div>
             <div className="mt-4">
-              <div className="font-display text-lg font-semibold">{displayName || user?.email?.split("@")[0]}</div>
+              <div className="font-display text-lg font-semibold">
+                {displayName || user?.email?.split("@")[0]}
+              </div>
               <div className="text-xs text-muted-foreground truncate">{user?.email}</div>
             </div>
 
@@ -141,7 +179,9 @@ function Profile() {
                 </div>
                 <div className="text-left">
                   <div className="text-xs font-semibold">Level {level} Builder</div>
-                  <div className="text-[10px] text-muted-foreground">{currentLevelXp}/500 XP ({percent}%)</div>
+                  <div className="text-[10px] text-muted-foreground">
+                    {currentLevelXp}/500 XP ({percent}%)
+                  </div>
                 </div>
               </div>
 
@@ -187,7 +227,11 @@ function Profile() {
               disabled={saving}
               className="inline-flex items-center gap-2 rounded-xl bg-gradient-spark px-4 py-2.5 text-sm font-medium text-primary-foreground shadow-glow disabled:opacity-50"
             >
-              {saving ? <Icons.Loader2 className="h-4 w-4 animate-spin" /> : <Icons.Save className="h-4 w-4" />}
+              {saving ? (
+                <Icons.Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Icons.Save className="h-4 w-4" />
+              )}
               Save changes
             </button>
             {msg && <p className="text-xs text-spark">{msg}</p>}
@@ -201,7 +245,10 @@ function Profile() {
             <div className="grid gap-3 sm:grid-cols-2">
               {ALL_ACHIEVEMENTS.map((a) => {
                 const isUnlocked = unlocked.includes(a.code);
-                const IconComp = (Icons as any)[a.icon] || Icons.Trophy;
+                const IconComp =
+                  (Icons as unknown as Record<string, ComponentType<{ className?: string }>>)[
+                    a.icon
+                  ] || Icons.Trophy;
 
                 return (
                   <div
@@ -214,17 +261,27 @@ function Profile() {
                   >
                     <div
                       className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
-                        isUnlocked ? "bg-emerald-500/10 text-emerald-400" : "bg-white/5 text-muted-foreground"
+                        isUnlocked
+                          ? "bg-emerald-500/10 text-emerald-400"
+                          : "bg-white/5 text-muted-foreground"
                       }`}
                     >
-                      {isUnlocked ? <IconComp className="h-5 w-5" /> : <Icons.Lock className="h-5 w-5" />}
+                      {isUnlocked ? (
+                        <IconComp className="h-5 w-5" />
+                      ) : (
+                        <Icons.Lock className="h-5 w-5" />
+                      )}
                     </div>
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-2">
-                        <h4 className={`text-sm font-semibold ${isUnlocked ? "text-foreground" : "text-muted-foreground"}`}>
+                        <h4
+                          className={`text-sm font-semibold ${isUnlocked ? "text-foreground" : "text-muted-foreground"}`}
+                        >
                           {a.title}
                         </h4>
-                        <span className={`text-[9px] font-bold uppercase ${isUnlocked ? "text-emerald-400" : "text-muted-foreground"}`}>
+                        <span
+                          className={`text-[9px] font-bold uppercase ${isUnlocked ? "text-emerald-400" : "text-muted-foreground"}`}
+                        >
                           +{a.xp} XP
                         </span>
                       </div>

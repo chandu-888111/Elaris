@@ -6,6 +6,7 @@ import { DOMAINS } from "@/lib/domains";
 import { PageShell, PageHeader } from "@/components/PageHeader";
 import { SaveBar } from "@/components/SaveBar";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 import { useAuth } from "@/lib/auth";
 import { awardXP, XP, unlockAchievement } from "@/lib/gamification";
 import { toast } from "sonner";
@@ -113,12 +114,13 @@ function RoadmapIndexPage() {
 
   const onSave = async () => {
     if (!user || !customData) return;
+    const contentPayload: Json = customData as Json;
     const { error } = await supabase.from("roadmaps").insert({
       user_id: user.id,
       target_role: goal,
       timeframe,
       experience_level: level,
-      content: customData as any,
+      content: contentPayload,
     });
     if (error) {
       toast.error("Save failed");

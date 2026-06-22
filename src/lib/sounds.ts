@@ -4,7 +4,10 @@ let audioCtx: AudioContext | null = null;
 function getAudioContext(): AudioContext | null {
   if (typeof window === "undefined") return null;
   if (!audioCtx) {
-    audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+    audioCtx = new (
+      window.AudioContext ||
+      (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext
+    )();
   }
   return audioCtx;
 }
@@ -76,7 +79,7 @@ export function playSuccess() {
 
     osc.type = "sine";
     osc.frequency.setValueAtTime(freq, ctx.currentTime + delay);
-    
+
     gain.gain.setValueAtTime(0, ctx.currentTime + delay);
     gain.gain.linearRampToValueAtTime(volume, ctx.currentTime + delay + 0.03);
     gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + delay + duration);
@@ -92,7 +95,7 @@ export function playSuccess() {
   playNote(523.25, 0.0, 0.25); // C5
   playNote(659.25, 0.08, 0.25); // E5
   playNote(783.99, 0.16, 0.35); // G5
-  playNote(1046.50, 0.24, 0.45); // C6
+  playNote(1046.5, 0.24, 0.45); // C6
 }
 
 export function playSweep() {

@@ -14,12 +14,10 @@ export const PLANETARY_LEVELS = [
   { xp: 3000, name: "Mars", color: "#ef4444", type: "Planet" },
   { xp: 10000, name: "Jupiter", color: "#f59e0b", type: "Gas Giant" },
   { xp: 25000, name: "Saturn", color: "#fbbf24", type: "Gas Giant" },
-  { xp: 50000, name: "Uranus", color: "#06b6d4", type: "Ice Giant" },
-  { xp: 75000, name: "Neptune", color: "#3b82f6", type: "Ice Giant" },
-  { xp: 100000, name: "Alpha Centauri", color: "#fde047", type: "Star System" },
-  { xp: 250000, name: "Andromeda", color: "#c084fc", type: "Galaxy" },
-  { xp: 500000, name: "Milky Way Core", color: "#f87171", type: "Supermassive Core" },
-  { xp: 1000000, name: "Quantum Realm", color: "#a855f7", type: "Dimension" },
+  { xp: 50000, name: "Neptune", color: "#3b82f6", type: "Ice Giant" },
+  { xp: 100000, name: "Galaxy Explorer", color: "#fde047", type: "Title" },
+  { xp: 250000, name: "Cosmic Architect", color: "#c084fc", type: "Title" },
+  { xp: 500000, name: "Universal Builder", color: "#f87171", type: "Title" },
 ];
 
 export function getPlanetForXP(xp: number) {
@@ -55,13 +53,13 @@ export async function awardXP(amount: number, reason: string): Promise<XPReward 
       newStreak: row.new_streak,
       newLevel: row.new_level, // We keep the base level logic for database compatibility
     };
-    
+
     const { current, next } = getPlanetForXP(reward.newXp);
-    
+
     toast.success(`+${amount} XP — ${reason}`, {
       description: `🔥 ${reward.newStreak}-day streak · ${current.name} Orbit · ${reward.newXp} XP`,
       duration: 3500,
-      icon: "🚀"
+      icon: "🚀",
     });
     return reward;
   } catch (e) {
@@ -91,7 +89,7 @@ export async function unlockAchievement(opts: {
     icon: opts.icon ?? "trophy",
     xp_awarded: xp,
   });
-  
+
   if (error && !error.message.includes("duplicate")) {
     console.error("[achievement]", error);
     return;

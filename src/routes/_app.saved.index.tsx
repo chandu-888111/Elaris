@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell, PageHeader } from "@/components/PageHeader";
 import {
@@ -15,7 +15,7 @@ import {
   GraduationCap,
   Lightbulb,
   ExternalLink,
-  Search
+  Search,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth";
 import { toast } from "sonner";
@@ -27,7 +27,59 @@ export const Route = createFileRoute("/_app/saved/")({
   component: SavedPage,
 });
 
-type TabType = "blueprints" | "projects" | "portfolios" | "books" | "interview" | "mentor" | "study";
+interface BlueprintJson {
+  category?: string;
+  categoryName?: string;
+  description?: string;
+  format?: string;
+  url?: string;
+  questionsCount?: number;
+  company?: string;
+  timeframe?: string;
+}
+
+interface BuildBlueprint {
+  id: string;
+  title: string;
+  description: string | null;
+  technologies: string[] | null;
+  created_at: string;
+  blueprint: BlueprintJson;
+}
+
+interface ProjectIdea {
+  id: string;
+  title: string;
+  solution_overview: string;
+  domains: string[] | null;
+  difficulty: string;
+  created_at: string;
+}
+
+interface MentorPlan {
+  id: string;
+  topic: string;
+  goal: string | null;
+  level: string;
+  created_at: string;
+}
+
+interface StudyGuide {
+  id: string;
+  domain: string;
+  goal: string;
+  daily_minutes: number;
+  created_at: string;
+}
+
+type TabType =
+  | "blueprints"
+  | "projects"
+  | "portfolios"
+  | "books"
+  | "interview"
+  | "mentor"
+  | "study";
 
 function SavedPage() {
   const { user } = useAuth();
@@ -36,47 +88,61 @@ function SavedPage() {
   const [searchQuery, setSearchQuery] = useState("");
 
   // Category lists
-  const [blueprints, setBlueprints] = useState<any[]>([]);
-  const [projectIdeas, setProjectIdeas] = useState<any[]>([]);
-  const [portfolios, setPortfolios] = useState<any[]>([]);
-  const [books, setBooks] = useState<any[]>([]);
-  const [interviewPreps, setInterviewPreps] = useState<any[]>([]);
-  const [mentorPlans, setMentorPlans] = useState<any[]>([]);
-  const [studyGuides, setStudyGuides] = useState<any[]>([]);
+  const [blueprints, setBlueprints] = useState<BuildBlueprint[]>([]);
+  const [projectIdeas, setProjectIdeas] = useState<ProjectIdea[]>([]);
+  const [portfolios, setPortfolios] = useState<BuildBlueprint[]>([]);
+  const [books, setBooks] = useState<BuildBlueprint[]>([]);
+  const [interviewPreps, setInterviewPreps] = useState<BuildBlueprint[]>([]);
+  const [mentorPlans, setMentorPlans] = useState<MentorPlan[]>([]);
+  const [studyGuides, setStudyGuides] = useState<StudyGuide[]>([]);
 
-  const filterList = (list: any[], fields: string[]) => {
+  const filterList = <T,>(list: T[], fields: string[]): T[] => {
     if (!searchQuery.trim()) return list;
     const query = searchQuery.toLowerCase().trim();
     return list.filter((item) => {
       return fields.some((field) => {
-        const val = field.split('.').reduce((acc: any, part: string) => acc && acc[part], item);
+        const val = field.split(".").reduce<unknown>((acc, part) => {
+          if (acc && typeof acc === "object" && part in acc) {
+            return (acc as Record<string, unknown>)[part];
+          }
+          return undefined;
+        }, item);
         return val && String(val).toLowerCase().includes(query);
       });
     });
   };
 
   const filteredBlueprints = filterList(blueprints, ["title", "description", "technologies"]);
-  const filteredProjectIdeas = filterList(projectIdeas, ["title", "solution_overview", "difficulty", "domains"]);
+  const filteredProjectIdeas = filterList(projectIdeas, [
+    "title",
+    "solution_overview",
+    "difficulty",
+    "domains",
+  ]);
   const filteredPortfolios = filterList(portfolios, ["title", "description", "technologies"]);
-  const filteredBooks = filterList(books, ["title", "blueprint.description", "blueprint.categoryName", "blueprint.author"]);
-  const filteredInterviewPreps = filterList(interviewPreps, ["title", "description", "blueprint.company"]);
+  const filteredBooks = filterList(books, [
+    "title",
+    "blueprint.description",
+    "blueprint.categoryName",
+    "blueprint.author",
+  ]);
+  const filteredInterviewPreps = filterList(interviewPreps, [
+    "title",
+    "description",
+    "blueprint.company",
+  ]);
   const filteredMentorPlans = filterList(mentorPlans, ["topic", "goal", "level"]);
   const filteredStudyGuides = filterList(studyGuides, ["domain", "goal"]);
 
-  const loadAllSaved = async () => {
+  const loadAllSaved = useCallback(async () => {
     if (!user) return;
     setLoading(true);
     try {
-      const [
-        projectsRes,
-        blueprintsRes,
-        mentorRes,
-        studyRes
-      ] = await Promise.all([
+      const [projectsRes, blueprintsRes, mentorRes, studyRes] = await Promise.all([
         supabase.from("projects").select("*").order("created_at", { ascending: false }),
         supabase.from("build_blueprints").select("*").order("created_at", { ascending: false }),
         supabase.from("mentor_plans").select("*").order("created_at", { ascending: false }),
-        supabase.from("study_guides").select("*").order("created_at", { ascending: false })
+        supabase.from("study_guides").select("*").order("created_at", { ascending: false }),
       ]);
 
       if (projectsRes.error) throw projectsRes.error;
@@ -84,19 +150,19 @@ function SavedPage() {
       if (mentorRes.error) throw mentorRes.error;
       if (studyRes.error) throw studyRes.error;
 
-      setProjectIdeas(projectsRes.data || []);
-      setMentorPlans(mentorRes.data || []);
-      setStudyGuides(studyRes.data || []);
+      setProjectIdeas((projectsRes.data || []) as unknown as ProjectIdea[]);
+      setMentorPlans((mentorRes.data || []) as unknown as MentorPlan[]);
+      setStudyGuides((studyRes.data || []) as unknown as StudyGuide[]);
 
       // Split build_blueprints by blueprint.category
-      const allBps = blueprintsRes.data || [];
-      const bps: any[] = [];
-      const ports: any[] = [];
-      const bks: any[] = [];
-      const preps: any[] = [];
+      const allBps = (blueprintsRes.data || []) as unknown as BuildBlueprint[];
+      const bps: BuildBlueprint[] = [];
+      const ports: BuildBlueprint[] = [];
+      const bks: BuildBlueprint[] = [];
+      const preps: BuildBlueprint[] = [];
 
       allBps.forEach((item) => {
-        const bp = item.blueprint as any;
+        const bp = item.blueprint;
         if (bp && bp.category === "portfolio") {
           ports.push(item);
         } else if (bp && bp.category === "book") {
@@ -122,18 +188,22 @@ function SavedPage() {
         else if (mentorRes.data && mentorRes.data.length > 0) setActiveTab("mentor");
         else if (studyRes.data && studyRes.data.length > 0) setActiveTab("study");
       }
-    } catch (err: any) {
-      toast.error("Failed to load saved items: " + err.message);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      toast.error("Failed to load saved items: " + message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     loadAllSaved();
-  }, [user]);
+  }, [loadAllSaved]);
 
-  const deleteItem = async (id: string, table: "projects" | "build_blueprints" | "mentor_plans" | "study_guides") => {
+  const deleteItem = async (
+    id: string,
+    table: "projects" | "build_blueprints" | "mentor_plans" | "study_guides",
+  ) => {
     playClick();
     const { error } = await supabase.from(table).delete().eq("id", id);
     if (error) {
@@ -144,25 +214,62 @@ function SavedPage() {
     }
   };
 
-  const tabs: { value: TabType; label: string; icon: any; count: number }[] = [
-    { value: "blueprints", label: "Sandbox & Blueprints", icon: Code2, count: filteredBlueprints.length },
-    { value: "projects", label: "Project Ideas", icon: Lightbulb, count: filteredProjectIdeas.length },
-    { value: "portfolios", label: "Portfolios", icon: FolderHeart, count: filteredPortfolios.length },
+  const tabs: {
+    value: TabType;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+    count: number;
+  }[] = [
+    {
+      value: "blueprints",
+      label: "Sandbox & Blueprints",
+      icon: Code2,
+      count: filteredBlueprints.length,
+    },
+    {
+      value: "projects",
+      label: "Project Ideas",
+      icon: Lightbulb,
+      count: filteredProjectIdeas.length,
+    },
+    {
+      value: "portfolios",
+      label: "Portfolios",
+      icon: FolderHeart,
+      count: filteredPortfolios.length,
+    },
     { value: "books", label: "Books & Docs", icon: BookOpen, count: filteredBooks.length },
-    { value: "interview", label: "Interview Prep", icon: Terminal, count: filteredInterviewPreps.length },
+    {
+      value: "interview",
+      label: "Interview Prep",
+      icon: Terminal,
+      count: filteredInterviewPreps.length,
+    },
     { value: "mentor", label: "AI Mentor Plans", icon: Brain, count: filteredMentorPlans.length },
-    { value: "study", label: "Study Guides", icon: GraduationCap, count: filteredStudyGuides.length },
+    {
+      value: "study",
+      label: "Study Guides",
+      icon: GraduationCap,
+      count: filteredStudyGuides.length,
+    },
   ];
 
   const renderActiveContent = () => {
     switch (activeTab) {
       case "blueprints":
         return filteredBlueprints.length === 0 ? (
-          <EmptyState tabLabel="Blueprints & Code Sandbox" redirectPath="/builder" hasQuery={!!searchQuery} />
+          <EmptyState
+            tabLabel="Blueprints & Code Sandbox"
+            redirectPath="/builder"
+            hasQuery={!!searchQuery}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredBlueprints.map((item) => (
-              <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+              <HolographicPanel
+                key={item.id}
+                className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+              >
                 <button
                   onClick={() => deleteItem(item.id, "build_blueprints")}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -175,18 +282,24 @@ function SavedPage() {
                     <span>{item.title}</span>
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                    {item.description || "Production project blueprint with generated starter files and architectural layouts."}
+                    {item.description ||
+                      "Production project blueprint with generated starter files and architectural layouts."}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {(item.technologies || []).slice(0, 4).map((tech: string) => (
-                      <span key={tech} className="px-2 py-0.5 rounded-full border border-spark/20 bg-spark/5 text-[9px] uppercase tracking-wider text-spark font-mono">
+                      <span
+                        key={tech}
+                        className="px-2 py-0.5 rounded-full border border-spark/20 bg-spark/5 text-[9px] uppercase tracking-wider text-spark font-mono"
+                      >
                         {tech}
                       </span>
                     ))}
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                  <span className="text-muted-foreground font-mono">{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground font-mono">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                   <Link
                     to="/builder"
                     search={{ restoreId: item.id }}
@@ -208,7 +321,10 @@ function SavedPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredProjectIdeas.map((item) => (
-              <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+              <HolographicPanel
+                key={item.id}
+                className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+              >
                 <button
                   onClick={() => deleteItem(item.id, "projects")}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -225,7 +341,10 @@ function SavedPage() {
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {(item.domains || []).slice(0, 3).map((domain: string) => (
-                      <span key={domain} className="px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-[9px] uppercase tracking-wider text-muted-foreground">
+                      <span
+                        key={domain}
+                        className="px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-[9px] uppercase tracking-wider text-muted-foreground"
+                      >
                         {domain}
                       </span>
                     ))}
@@ -235,7 +354,9 @@ function SavedPage() {
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                  <span className="text-muted-foreground font-mono">{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground font-mono">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                   <Link
                     to="/saved/$projectId"
                     params={{ projectId: item.id }}
@@ -253,11 +374,18 @@ function SavedPage() {
 
       case "portfolios":
         return filteredPortfolios.length === 0 ? (
-          <EmptyState tabLabel="Custom Portfolios" redirectPath="/portfolio" hasQuery={!!searchQuery} />
+          <EmptyState
+            tabLabel="Custom Portfolios"
+            redirectPath="/portfolio"
+            hasQuery={!!searchQuery}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredPortfolios.map((item) => (
-              <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+              <HolographicPanel
+                key={item.id}
+                className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+              >
                 <button
                   onClick={() => deleteItem(item.id, "build_blueprints")}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -270,18 +398,24 @@ function SavedPage() {
                     <span>{item.title}</span>
                   </h3>
                   <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed">
-                    {item.description || "Tailored developer custom portfolio website styling and content structure."}
+                    {item.description ||
+                      "Tailored developer custom portfolio website styling and content structure."}
                   </p>
                   <div className="flex flex-wrap gap-1 mt-2">
                     {(item.technologies || []).slice(0, 4).map((tech: string) => (
-                      <span key={tech} className="px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-[9px] uppercase tracking-wider text-muted-foreground">
+                      <span
+                        key={tech}
+                        className="px-2 py-0.5 rounded-full border border-white/10 bg-white/5 text-[9px] uppercase tracking-wider text-muted-foreground"
+                      >
                         {tech}
                       </span>
                     ))}
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                  <span className="text-muted-foreground font-mono">{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground font-mono">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                   <Link
                     to="/portfolio"
                     search={{ restoreId: item.id }}
@@ -299,13 +433,20 @@ function SavedPage() {
 
       case "books":
         return filteredBooks.length === 0 ? (
-          <EmptyState tabLabel="Saved Books & Docs" redirectPath="/books" hasQuery={!!searchQuery} />
+          <EmptyState
+            tabLabel="Saved Books & Docs"
+            redirectPath="/books"
+            hasQuery={!!searchQuery}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredBooks.map((item) => {
-              const bp = item.blueprint as any;
+              const bp = item.blueprint;
               return (
-                <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+                <HolographicPanel
+                  key={item.id}
+                  className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+                >
                   <button
                     onClick={() => deleteItem(item.id, "build_blueprints")}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -325,12 +466,16 @@ function SavedPage() {
                     </p>
                   </div>
                   <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                    <span className="text-purple-400 font-mono font-bold bg-purple-500/10 border border-purple-500/10 px-1.5 py-0.2 rounded text-[8px]">{bp.format || "HTML"}</span>
+                    <span className="text-purple-400 font-mono font-bold bg-purple-500/10 border border-purple-500/10 px-1.5 py-0.2 rounded text-[8px]">
+                      {bp.format || "HTML"}
+                    </span>
                     <a
                       href={bp.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => { playSuccess(); }}
+                      onClick={() => {
+                        playSuccess();
+                      }}
                       className="text-spark hover:underline font-semibold flex items-center gap-1"
                     >
                       <span>Read Book</span>
@@ -345,13 +490,20 @@ function SavedPage() {
 
       case "interview":
         return filteredInterviewPreps.length === 0 ? (
-          <EmptyState tabLabel="Interview Prep Lists" redirectPath="/job-prep" hasQuery={!!searchQuery} />
+          <EmptyState
+            tabLabel="Interview Prep Lists"
+            redirectPath="/job-prep"
+            hasQuery={!!searchQuery}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredInterviewPreps.map((item) => {
-              const bp = item.blueprint as any;
+              const bp = item.blueprint;
               return (
-                <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+                <HolographicPanel
+                  key={item.id}
+                  className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+                >
                   <button
                     onClick={() => deleteItem(item.id, "build_blueprints")}
                     className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -364,7 +516,8 @@ function SavedPage() {
                       <span>{item.title}</span>
                     </h3>
                     <p className="text-xs text-muted-foreground line-clamp-2 leading-relaxed font-sans">
-                      {item.description || `LeetCode questions list compiled for technical interviews.`}
+                      {item.description ||
+                        `LeetCode questions list compiled for technical interviews.`}
                     </p>
                     {bp && (
                       <span className="inline-block text-[10px] text-muted-foreground bg-white/5 border border-white/10 px-2 py-0.5 rounded">
@@ -373,7 +526,9 @@ function SavedPage() {
                     )}
                   </div>
                   <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                    <span className="text-muted-foreground font-mono">{new Date(item.created_at).toLocaleDateString()}</span>
+                    <span className="text-muted-foreground font-mono">
+                      {new Date(item.created_at).toLocaleDateString()}
+                    </span>
                     <Link
                       to="/job-prep"
                       search={{ company: bp.company, timeframe: bp.timeframe }}
@@ -396,7 +551,10 @@ function SavedPage() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredMentorPlans.map((item) => (
-              <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+              <HolographicPanel
+                key={item.id}
+                className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+              >
                 <button
                   onClick={() => deleteItem(item.id, "mentor_plans")}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -416,7 +574,9 @@ function SavedPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                  <span className="text-muted-foreground font-mono">{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground font-mono">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                   <Link
                     to="/mentor"
                     search={{ restoreId: item.id }}
@@ -434,11 +594,18 @@ function SavedPage() {
 
       case "study":
         return filteredStudyGuides.length === 0 ? (
-          <EmptyState tabLabel="AI Study Guides" redirectPath="/study-guide" hasQuery={!!searchQuery} />
+          <EmptyState
+            tabLabel="AI Study Guides"
+            redirectPath="/study-guide"
+            hasQuery={!!searchQuery}
+          />
         ) : (
           <div className="grid gap-4 sm:grid-cols-2">
             {filteredStudyGuides.map((item) => (
-              <HolographicPanel key={item.id} className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45">
+              <HolographicPanel
+                key={item.id}
+                className="p-5 flex flex-col justify-between min-h-[160px] relative group border-white/5 bg-card/45"
+              >
                 <button
                   onClick={() => deleteItem(item.id, "study_guides")}
                   className="absolute right-3 top-3 text-muted-foreground hover:text-destructive p-1 rounded hover:bg-white/5 opacity-0 group-hover:opacity-100 transition cursor-none"
@@ -458,7 +625,9 @@ function SavedPage() {
                   </span>
                 </div>
                 <div className="flex items-center justify-between border-t border-white/5 pt-3 mt-4 text-[10px]">
-                  <span className="text-muted-foreground font-mono">{new Date(item.created_at).toLocaleDateString()}</span>
+                  <span className="text-muted-foreground font-mono">
+                    {new Date(item.created_at).toLocaleDateString()}
+                  </span>
                   <Link
                     to="/study-guide"
                     search={{ restoreId: item.id }}
@@ -490,13 +659,19 @@ function SavedPage() {
       {/* Search and Tabs Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
         {/* Tabs */}
-        <div className="flex border-b border-white/5 text-xs font-semibold overflow-x-auto pb-1 gap-1 scrollbar-none flex-1 order-last md:order-first" data-lenis-prevent>
+        <div
+          className="flex border-b border-white/5 text-xs font-semibold overflow-x-auto pb-1 gap-1 scrollbar-none flex-1 order-last md:order-first"
+          data-lenis-prevent
+        >
           {tabs.map((tab) => {
             const Icon = tab.icon;
             return (
               <button
                 key={tab.value}
-                onClick={() => { playClick(); setActiveTab(tab.value); }}
+                onClick={() => {
+                  playClick();
+                  setActiveTab(tab.value);
+                }}
                 className={`px-4.5 py-2.5 capitalize rounded-t-xl transition flex items-center gap-1.5 whitespace-nowrap ${
                   activeTab === tab.value
                     ? "border-b-2 border-spark text-foreground bg-spark/5"
@@ -520,7 +695,7 @@ function SavedPage() {
             type="text"
             placeholder="Search saved items..."
             value={searchQuery}
-            onChange={e => setSearchQuery(e.target.value)}
+            onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-xl border border-white/10 bg-background/50 pl-9 pr-8 py-1.5 text-xs text-foreground outline-none focus:border-spark focus:ring-1 focus:ring-spark/30 transition-all"
           />
           {searchQuery && (
@@ -537,19 +712,28 @@ function SavedPage() {
       {loading ? (
         <div className="grid gap-3 sm:grid-cols-2">
           {Array.from({ length: 4 }).map((_, i) => (
-            <div key={i} className="h-36 animate-pulse rounded-2xl bg-card/20 border border-white/5" />
+            <div
+              key={i}
+              className="h-36 animate-pulse rounded-2xl bg-card/20 border border-white/5"
+            />
           ))}
         </div>
       ) : (
-        <div className="animate-in fade-in duration-300">
-          {renderActiveContent()}
-        </div>
+        <div className="animate-in fade-in duration-300">{renderActiveContent()}</div>
       )}
     </PageShell>
   );
 }
 
-function EmptyState({ tabLabel, redirectPath, hasQuery }: { tabLabel: string; redirectPath: string; hasQuery?: boolean }) {
+function EmptyState({
+  tabLabel,
+  redirectPath,
+  hasQuery,
+}: {
+  tabLabel: string;
+  redirectPath: string;
+  hasQuery?: boolean;
+}) {
   if (hasQuery) {
     return (
       <div className="flex flex-col items-center gap-4 rounded-2xl border border-dashed border-border py-20 text-center">
@@ -574,7 +758,8 @@ function EmptyState({ tabLabel, redirectPath, hasQuery }: { tabLabel: string; re
       <div>
         <p className="font-display text-lg font-medium">No saved items in this category</p>
         <p className="mt-1 text-xs text-muted-foreground max-w-sm px-4">
-          Compile and bookmark references or generate AI tools inside the {tabLabel} section to see them listed here.
+          Compile and bookmark references or generate AI tools inside the {tabLabel} section to see
+          them listed here.
         </p>
       </div>
       <Link

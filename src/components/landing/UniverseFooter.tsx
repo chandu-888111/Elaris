@@ -13,34 +13,79 @@ export function UniverseFooter() {
           <div className="md:col-span-2">
             <Logo />
             <p className="mt-6 text-white/50 text-sm max-w-xs leading-relaxed">
-              The ultimate AI operating system for developers. Generate ideas, learn faster, and ship to the cosmos.
+              The ultimate AI operating system for developers. Generate ideas, learn faster, and
+              ship to the cosmos.
             </p>
           </div>
-          
+
           <div>
-            <h4 className="text-white font-bold mb-6 tracking-widest uppercase text-xs">Ecosystem</h4>
+            <h4 className="text-white font-bold mb-6 tracking-widest uppercase text-xs">
+              Ecosystem
+            </h4>
             <ul className="space-y-4">
-              <li><Link to="/generator" className="text-white/50 hover:text-white transition text-sm">AI Project Builder</Link></li>
-              <li><Link to="/roadmap" className="text-white/50 hover:text-white transition text-sm">Galaxy Roadmaps</Link></li>
-              <li><Link to="/study-guide" className="text-white/50 hover:text-white transition text-sm">Knowledge Library</Link></li>
-              <li><Link to="/job-prep" className="text-white/50 hover:text-white transition text-sm">Interview Simulator</Link></li>
+              <li>
+                <Link to="/generator" className="text-white/50 hover:text-white transition text-sm">
+                  AI Project Builder
+                </Link>
+              </li>
+              <li>
+                <Link to="/roadmap" className="text-white/50 hover:text-white transition text-sm">
+                  Galaxy Roadmaps
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/study-guide"
+                  className="text-white/50 hover:text-white transition text-sm"
+                >
+                  Knowledge Library
+                </Link>
+              </li>
+              <li>
+                <Link to="/job-prep" className="text-white/50 hover:text-white transition text-sm">
+                  Interview Simulator
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-white font-bold mb-6 tracking-widest uppercase text-xs">Network</h4>
             <ul className="space-y-4">
-              <li><Link to="/collaboration" className="text-white/50 hover:text-white transition text-sm">Find Teams</Link></li>
-              <li><Link to="/mentor" className="text-white/50 hover:text-white transition text-sm">Holographic Mentor</Link></li>
-              <li><Link to="/dashboard" className="text-white/50 hover:text-white transition text-sm">Mission Control</Link></li>
+              <li>
+                <Link
+                  to="/collaboration"
+                  className="text-white/50 hover:text-white transition text-sm"
+                >
+                  Find Teams
+                </Link>
+              </li>
+              <li>
+                <Link to="/mentor" className="text-white/50 hover:text-white transition text-sm">
+                  Holographic Mentor
+                </Link>
+              </li>
+              <li>
+                <Link to="/dashboard" className="text-white/50 hover:text-white transition text-sm">
+                  Mission Control
+                </Link>
+              </li>
             </ul>
           </div>
 
           <div>
             <h4 className="text-white font-bold mb-6 tracking-widest uppercase text-xs">Legal</h4>
             <ul className="space-y-4">
-              <li><a href="#" className="text-white/50 hover:text-white transition text-sm">Privacy Policy</a></li>
-              <li><a href="#" className="text-white/50 hover:text-white transition text-sm">Terms of Service</a></li>
+              <li>
+                <a href="#" className="text-white/50 hover:text-white transition text-sm">
+                  Privacy Policy
+                </a>
+              </li>
+              <li>
+                <a href="#" className="text-white/50 hover:text-white transition text-sm">
+                  Terms of Service
+                </a>
+              </li>
             </ul>
           </div>
         </div>

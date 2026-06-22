@@ -1,5 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
+import type { Json } from "@/integrations/supabase/types";
 import { generateTextResilient, getAvailableProviders } from "./ai-gateway";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
 import {
@@ -58,12 +59,17 @@ async function callJson<T>(schema: z.ZodType<T>, prompt: string, fallback?: T): 
   throw new Error("AI failed to return valid JSON after retries.");
 }
 
-function getFallbackRoadmap(role: string, timeframe: string, level: string, dailyHours: number): Roadmap {
+function getFallbackRoadmap(
+  role: string,
+  timeframe: string,
+  level: string,
+  dailyHours: number,
+): Roadmap {
   const normRole = role || "Software Engineer";
   const normLevel = level || "Beginner";
   const normTime = timeframe || "3 months";
   const normHours = dailyHours || 2;
-  
+
   return {
     role: normRole,
     summary: `A customized career path designed to take you from ${normLevel} to professional competency as a ${normRole} within a ${normTime} timeframe, studying ${normHours} hours per day.`,
@@ -71,140 +77,163 @@ function getFallbackRoadmap(role: string, timeframe: string, level: string, dail
       {
         title: `Phase 1: Foundational Tools & Core Syntax for ${normRole}`,
         duration: `Weeks 1-4`,
-        skills: [`Basic syntax & core theory of ${normRole}`, `Integrated Development Environments (IDEs)`, `Version Control with Git & GitHub`],
+        skills: [
+          `Basic syntax & core theory of ${normRole}`,
+          `Integrated Development Environments (IDEs)`,
+          `Version Control with Git & GitHub`,
+        ],
         projects: [`First Hello-World ${normRole} project`, `Simple personal command-line utility`],
-        certifications: [`Introduction to ${normRole} Fundamentals`]
+        certifications: [`Introduction to ${normRole} Fundamentals`],
       },
       {
         title: `Phase 2: Intermediate Concepts & Local Development`,
         duration: `Weeks 5-8`,
-        skills: [`Debugging & troubleshooting workflows`, `Structuring data lists and objects`, `Package management & simple libraries`],
+        skills: [
+          `Debugging & troubleshooting workflows`,
+          `Structuring data lists and objects`,
+          `Package management & simple libraries`,
+        ],
         projects: [`Interactive console application`, `Local automated test suite`],
-        certifications: [`Intermediate developer skills in ${normRole}`]
+        certifications: [`Intermediate developer skills in ${normRole}`],
       },
       {
         title: `Phase 3: Advanced Architectures & State Management`,
         duration: `Weeks 9-12`,
-        skills: [`Asynchronous programming & network calls`, `Designing relational datasets`, `Performance tuning & optimization`],
-        projects: [`Data dashboard displaying external API payloads`, `Multi-layered storage-oriented application`],
-        certifications: [`Advanced concepts for ${normRole} developers`]
+        skills: [
+          `Asynchronous programming & network calls`,
+          `Designing relational datasets`,
+          `Performance tuning & optimization`,
+        ],
+        projects: [
+          `Data dashboard displaying external API payloads`,
+          `Multi-layered storage-oriented application`,
+        ],
+        certifications: [`Advanced concepts for ${normRole} developers`],
       },
       {
         title: `Phase 4: Real-world Workflows & Deployment`,
         duration: `Weeks 13+`,
-        skills: [`CI/CD pipeline orchestration`, `Secure environment variables and production hosting`, `Professional system design patterns`],
-        projects: [`Production-ready deployed deployment of ${normRole} system`, `Portfolio project showcase`],
-        certifications: [`Certified ${normRole} Professional - Capstone Certificate`]
-      }
+        skills: [
+          `CI/CD pipeline orchestration`,
+          `Secure environment variables and production hosting`,
+          `Professional system design patterns`,
+        ],
+        projects: [
+          `Production-ready deployed deployment of ${normRole} system`,
+          `Portfolio project showcase`,
+        ],
+        certifications: [`Certified ${normRole} Professional - Capstone Certificate`],
+      },
     ],
     dailySchedule: [
       `30 mins: Read technical articles or official docs for ${normRole}`,
       `${normHours * 40} mins: Hands-on code construction and project building`,
       `${normHours * 15} mins: Refactoring syntax and pushing code to GitHub`,
-      `15 mins: Review open-source codebases or solve quick coding algorithms`
+      `15 mins: Review open-source codebases or solve quick coding algorithms`,
     ],
     interviewPrep: [
       `Mastering the foundational interview questions for ${normRole}`,
       `Practice explaining system design concepts and patterns aloud`,
       `Optimize your resume and LinkedIn to highlight your ${normRole} projects`,
       `Participate in mock interviews focusing on data structures & debugging`,
-      `Write a clear, structured case study for your capstone project`
-    ]
+      `Write a clear, structured case study for your capstone project`,
+    ],
   };
 }
 
-function getFallbackStudyGuide(domain: string, skillLevel: string, goal: string, dailyMinutes: number): StudyGuide {
+function getFallbackStudyGuide(
+  domain: string,
+  skillLevel: string,
+  goal: string,
+  dailyMinutes: number,
+): StudyGuide {
   const normDomain = domain || "Software Engineering";
   const normLevel = skillLevel || "Beginner";
   const normGoal = goal || "Learn key patterns";
   const normMins = dailyMinutes || 60;
-  
+
   return {
     title: `Comprehensive Guide to mastering ${normDomain}`,
     summary: `Structured study outline designed for a ${normLevel} to achieve the goal: "${normGoal}" in ${normMins} minutes of daily practice.`,
-    weeks: [
+    modules: [
       {
-        week: 1,
-        focus: `Orientation and Core Concepts of ${normDomain}`,
-        tasks: [
+        id: "module-1",
+        title: `Orientation and Core Concepts of ${normDomain}`,
+        learn: `To master ${normDomain}, you must first understand the foundational components. This involves setting up your environment, learning the basic syntax, and understanding how data flows within the application. Variables, control structures, and loops are your primary building blocks.`,
+        visualize: `Diagram:
+[Your IDE] -> [Compiler/Interpreter] -> [Execution Engine]
+Control Flow: Start -> Condition? -> (Yes) Loop -> (No) End`,
+        practice: [
           `Install the required IDE and standard developer extensions`,
           `Write your first Hello-World program and run it locally`,
-          `Familiarize yourself with basic variables, control flows, and loops`
+          `Create a script that uses if/else statements and a for loop`,
         ],
-        resources: [
-          `Official Documentation Quickstart Guide`,
-          `Interactive Introductory Coding Course (FreeCodeCamp/W3Schools)`,
-          `Video: Core Concepts of ${normDomain} explained in 15 minutes`
-        ]
+        build: {
+          title: `Simple CLI Tool`,
+          description: `Build a command line application that takes user input, processes it, and outputs a formatted result.`,
+        },
+        test: [
+          {
+            question: `What is the primary purpose of a compiler?`,
+            options: [
+              `To format code`,
+              `To translate code to machine instructions`,
+              `To host a web server`,
+              `To style UI`,
+            ],
+            answer: `To translate code to machine instructions`,
+          },
+        ],
       },
       {
-        week: 2,
-        focus: `Data Layouts and Object Relationships`,
-        tasks: [
+        id: "module-2",
+        title: `Data Layouts and Object Relationships`,
+        learn: `Once you know the basics, the next step is structuring data. Arrays (or lists) hold ordered collections, while objects (or dictionaries) hold key-value pairs. Mastering these data structures allows you to model real-world concepts efficiently.`,
+        visualize: `Diagram:
+Array: [0: "apple", 1: "banana", 2: "cherry"]
+Object: { "name": "Alice", "age": 25, "role": "Developer" }`,
+        practice: [
           `Implement arrays, collections, and simple dictionaries/objects`,
           `Build functions that perform calculations and manipulate complex collections`,
-          `Handle user input and read output safely from standard streams`
+          `Filter, map, and reduce a large dataset`,
         ],
-        resources: [
-          `MDN / DevDocs Guides on Data Types`,
-          `Article: Mastering lists and maps in modern ${normDomain}`,
-          `Practical exercise sheets on data operations`
-        ]
+        build: {
+          title: `Data Processor`,
+          description: `Create an application that reads a list of objects, filters them based on criteria, and prints the result.`,
+        },
+        test: [
+          {
+            question: `Which data structure is best for storing key-value pairs?`,
+            options: [`Array`, `Linked List`, `Dictionary / Object`, `Queue`],
+            answer: `Dictionary / Object`,
+          },
+        ],
       },
-      {
-        week: 3,
-        focus: `Modular Architecture and Code Packaging`,
-        tasks: [
-          `Split a single code file into separate importable modules`,
-          `Integrate external libraries via a package manager`,
-          `Write exception handling wrappers for files and network calls`
-        ],
-        resources: [
-          `Tutorial: Organizing files and namespaces in ${normDomain}`,
-          `Guide to dependency management and configuration`,
-          `Reference manual on common exceptions and how to debug them`
-        ]
-      },
-      {
-        week: 4,
-        focus: `Testing, Deployment and Mastery of the Goal`,
-        tasks: [
-          `Write unit tests focusing on standard behavior and edge cases`,
-          `Build and test a fully functional mini-project matching: ${normGoal}`,
-          `Publish your project on GitHub and document it with a clean README`
-        ],
-        resources: [
-          `Best practices for structuring README.md documentation`,
-          `CI/CD integration checklists`,
-          `Refactoring guidelines for professional software developers`
-        ]
-      }
     ],
-    miniProjects: [
-      `Simple Command Line Dashboard demonstrating ${normDomain} syntax`,
-      `Interactive Data Converter converting values/formats locally`,
-      `Personal Task Organizer utilizing object-oriented database storage`,
-      `Capstone Project: Deployed application addressing the goal: "${normGoal}"`
-    ],
-    quizzes: [
-      `Quiz 1: Core Syntax, Variables, and Logic constructs in ${normDomain}`,
-      `Quiz 2: Structuring datasets and utilizing functions`,
-      `Quiz 3: Dynamic module imports, package usage, and error boundary handling`,
-      `Quiz 4: Testing protocols, clean deployment, and project organization`
-    ]
   };
 }
 
-function getFallbackBuildBlueprint(title: string, description: string, technologies: string[]): BuildBlueprint {
+function getFallbackBuildBlueprint(
+  title: string,
+  description: string,
+  technologies: string[],
+): BuildBlueprint {
   const normTitle = title || "Next-Gen Project Application";
   const normDesc = description || "A premium, state-of-the-art software system.";
-  const tech = technologies && technologies.length > 0 ? technologies : ["React", "TypeScript", "Node.js", "TailwindCSS"];
-  
-  const frontend = tech.filter(t => /react|vue|angular|svelte|next|nuxt|tailwind|css|html|js|ts|ui/i.test(t));
-  const backend = tech.filter(t => /node|express|nest|python|django|flask|fastapi|go|rust|java|c#/i.test(t));
-  const db = tech.filter(t => /sql|postgres|mongo|redis|prisma|supabase|firebase|db/i.test(t));
-  const devops = tech.filter(t => /docker|k8s|aws|vercel|netlify|github|ci|cd|action/i.test(t));
-  
+  const tech =
+    technologies && technologies.length > 0
+      ? technologies
+      : ["React", "TypeScript", "Node.js", "TailwindCSS"];
+
+  const frontend = tech.filter((t) =>
+    /react|vue|angular|svelte|next|nuxt|tailwind|css|html|js|ts|ui/i.test(t),
+  );
+  const backend = tech.filter((t) =>
+    /node|express|nest|python|django|flask|fastapi|go|rust|java|c#/i.test(t),
+  );
+  const db = tech.filter((t) => /sql|postgres|mongo|redis|prisma|supabase|firebase|db/i.test(t));
+  const devops = tech.filter((t) => /docker|k8s|aws|vercel|netlify|github|ci|cd|action/i.test(t));
+
   if (frontend.length === 0) frontend.push("Vite / React SPA");
   if (backend.length === 0) backend.push("Node.js / Express");
   if (db.length === 0) db.push("PostgreSQL (Supabase)");
@@ -216,7 +245,7 @@ function getFallbackBuildBlueprint(title: string, description: string, technolog
       frontend,
       backend,
       database: db,
-      devops
+      devops,
     },
     folderStructure: [
       `src/components/`,
@@ -228,111 +257,167 @@ function getFallbackBuildBlueprint(title: string, description: string, technolog
       `supabase/`,
       `package.json`,
       `tsconfig.json`,
-      `README.md`
+      `README.md`,
     ],
     frontendArchitecture: [
       `Component-Driven Architecture (reusable, atomic layout structures)`,
       `Global State Management for user session configuration and sound levels`,
       `Responsive design scaling across Desktop, Mobile, and Tablet devices`,
       `CSS grid & flexbox systems for fluid, modern user interfaces`,
-      `Optimized media loaders and content prefetching systems`
+      `Optimized media loaders and content prefetching systems`,
     ],
     backendArchitecture: [
       `RESTful API routes or Server Actions handles secure operations`,
       `Input validation wrappers (Zod) on all payload endpoints`,
       `Error boundary middleware capturing exceptions and logging failures`,
       `Database connections managed via connection pool structures`,
-      `Security headers and CORS configuration enabling safe cross-origin access`
+      `Security headers and CORS configuration enabling safe cross-origin access`,
     ],
     databaseSchema: [
       {
         table: `users`,
-        columns: [`id (uuid, PK)`, `email (varchar, unique)`, `created_at (timestamp)`, `updated_at (timestamp)`]
+        columns: [
+          `id (uuid, PK)`,
+          `email (varchar, unique)`,
+          `created_at (timestamp)`,
+          `updated_at (timestamp)`,
+        ],
       },
       {
         table: `projects`,
-        columns: [`id (uuid, PK)`, `user_id (uuid, FK)`, `title (varchar)`, `description (text)`, `is_completed (boolean)`, `created_at (timestamp)`]
+        columns: [
+          `id (uuid, PK)`,
+          `user_id (uuid, FK)`,
+          `title (varchar)`,
+          `description (text)`,
+          `is_completed (boolean)`,
+          `created_at (timestamp)`,
+        ],
       },
       {
         table: `logs`,
-        columns: [`id (uuid, PK)`, `project_id (uuid, FK)`, `action (varchar)`, `details (jsonb)`, `created_at (timestamp)`]
-      }
+        columns: [
+          `id (uuid, PK)`,
+          `project_id (uuid, FK)`,
+          `action (varchar)`,
+          `details (jsonb)`,
+          `created_at (timestamp)`,
+        ],
+      },
     ],
     apiRoutes: [
-      { method: `GET`, path: `/api/projects`, description: `Retrieve list of all active projects for logged-in user` },
-      { method: `POST`, path: `/api/projects`, description: `Create a new project workspace under user ownership` },
-      { method: `PUT`, path: `/api/projects/:id`, description: `Update properties or completion status of a project` },
-      { method: `DELETE`, path: `/api/projects/:id`, description: `Safely delete a project record and cascade related database logs` }
+      {
+        method: `GET`,
+        path: `/api/projects`,
+        description: `Retrieve list of all active projects for logged-in user`,
+      },
+      {
+        method: `POST`,
+        path: `/api/projects`,
+        description: `Create a new project workspace under user ownership`,
+      },
+      {
+        method: `PUT`,
+        path: `/api/projects/:id`,
+        description: `Update properties or completion status of a project`,
+      },
+      {
+        method: `DELETE`,
+        path: `/api/projects/:id`,
+        description: `Safely delete a project record and cascade related database logs`,
+      },
     ],
     authSetup: [
       `Utilize JSON Web Tokens (JWT) or OAuth providers for session tokens`,
       `Redirect unauthorized users to root/login views via layout middleware rules`,
       `Store active sessions securely using client-side cookies or localStorage`,
-      `Configure token expiration and automatic silent session refresh requests`
+      `Configure token expiration and automatic silent session refresh requests`,
     ],
     envVariables: [
       `VITE_SUPABASE_URL=URL endpoint of the database service provider`,
       `VITE_SUPABASE_PUBLISHABLE_KEY=Public access key client token`,
       `DATABASE_URL=Direct connection string for backend migration executions`,
-      `NODE_ENV=Set to 'development' or 'production'`
+      `NODE_ENV=Set to 'development' or 'production'`,
     ],
-    recommendedLibraries: [
-      `lucide-react`,
-      `clsx`,
-      `tailwind-merge`,
-      `zod`,
-      `canvas-confetti`
-    ],
+    recommendedLibraries: [`lucide-react`, `clsx`, `tailwind-merge`, `zod`, `canvas-confetti`],
     testingStrategy: [
       `Unit tests utilizing Vitest targeting business logic and utilities`,
       `End-to-End browser tests (Playwright) testing main user journeys`,
-      `Component testing utilizing React Testing Library validating element states`
+      `Component testing utilizing React Testing Library validating element states`,
     ],
     cicd: [
       `GitHub Actions triggers automated checks on all Pull Requests`,
       `Build stage executes 'npx tsc --noEmit && npm run build'`,
-      `Lint checks check code format policies before allowing integration`
+      `Lint checks check code format policies before allowing integration`,
     ],
     deploymentSteps: [
       `1. Log into your hosting console (e.g. Vercel / Netlify)`,
       `2. Connect the GitHub repository to the project dashboard`,
       `3. Configure environment variables matching target deployment settings`,
-      `4. Trigger initial build and verify URLs resolve properly`
+      `4. Trigger initial build and verify URLs resolve properly`,
     ],
     githubWorkflow: [
       `Create feature branches off the 'main' branch`,
       `Open a pull request once tests pass locally`,
       `Request peer review before merging code branches`,
-      `Release builds automatically deploy to production upon merging to main`
+      `Release builds automatically deploy to production upon merging to main`,
     ],
     mvpPlan: [
       `Responsive web dashboard displaying list of tasks`,
       `Creation form allowing user to add, edit, and delete items`,
       `Sound effect notifications trigger on successful status update`,
-      `Secure auth login block protecting user workspace directories`
+      `Secure auth login block protecting user workspace directories`,
     ],
     implementationSteps: [
-      { step: 1, title: `Workspace Initialization`, detail: `Create the app using Vite, configure TypeScript, and set up Git repository structure.` },
-      { step: 2, title: `Database & Tables Setup`, detail: `Execute SQL migrations to instantiate users, projects, and logs tables.` },
-      { step: 3, title: `Authentication Layout`, detail: `Build login templates and wire secure callback handlers to capture session cookies.` },
-      { step: 4, title: `Core API Handlers`, detail: `Implement router endpoints executing database read/write actions.` },
-      { step: 5, title: `UI Layout Components`, detail: `Design dashboard views displaying active project lists and action forms.` },
-      { step: 6, title: `Sound & Animations Integration`, detail: `Wire action hooks triggering visual canvas-confetti and audible sound bells.` },
-      { step: 7, title: `Production Deployment`, detail: `Publish workspace variables, push to Vercel/Netlify, and execute live tests.` }
+      {
+        step: 1,
+        title: `Workspace Initialization`,
+        detail: `Create the app using Vite, configure TypeScript, and set up Git repository structure.`,
+      },
+      {
+        step: 2,
+        title: `Database & Tables Setup`,
+        detail: `Execute SQL migrations to instantiate users, projects, and logs tables.`,
+      },
+      {
+        step: 3,
+        title: `Authentication Layout`,
+        detail: `Build login templates and wire secure callback handlers to capture session cookies.`,
+      },
+      {
+        step: 4,
+        title: `Core API Handlers`,
+        detail: `Implement router endpoints executing database read/write actions.`,
+      },
+      {
+        step: 5,
+        title: `UI Layout Components`,
+        detail: `Design dashboard views displaying active project lists and action forms.`,
+      },
+      {
+        step: 6,
+        title: `Sound & Animations Integration`,
+        detail: `Wire action hooks triggering visual canvas-confetti and audible sound bells.`,
+      },
+      {
+        step: 7,
+        title: `Production Deployment`,
+        detail: `Publish workspace variables, push to Vercel/Netlify, and execute live tests.`,
+      },
     ],
     starterSnippets: [
       {
         filename: `src/lib/db.ts`,
         language: `typescript`,
-        code: `// Initializing database client instance\nimport { createClient } from '@supabase/supabase-js';\n\nconst supabaseUrl = import.meta.env.VITE_SUPABASE_URL;\nconst supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;\n\nexport const db = createClient(supabaseUrl, supabaseKey);\n`
+        code: `// Initializing database client instance\nimport { createClient } from '@supabase/supabase-js';\n\nconst supabaseUrl = import.meta.env.VITE_SUPABASE_URL;\nconst supabaseKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;\n\nexport const db = createClient(supabaseUrl, supabaseKey);\n`,
       },
       {
         filename: `src/components/SoundButton.tsx`,
         language: `tsx`,
-        code: `// Interactive button triggering a click sound effect\nimport React from 'react';\nimport { playSound } from '../lib/sounds';\n\nexport const SoundButton: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => {\n  const handleClick = () => {\n    playSound('click');\n    onClick();\n  };\n  return (\n    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-md transition-all active:scale-95" onClick={handleClick}>\n      {children}\n    </button>\n  );\n};\n`
-      }
+        code: `// Interactive button triggering a click sound effect\nimport React from 'react';\nimport { playSound } from '../lib/sounds';\n\nexport const SoundButton: React.FC<{ onClick: () => void; children: React.ReactNode }> = ({ onClick, children }) => {\n  const handleClick = () => {\n    playSound('click');\n    onClick();\n  };\n  return (\n    <button className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md shadow-md transition-all active:scale-95" onClick={handleClick}>\n      {children}\n    </button>\n  );\n};\n`,
+      },
     ],
-    estimatedTimeline: `1-2 weeks`
+    estimatedTimeline: `1-2 weeks`,
   };
 }
 
@@ -344,48 +429,48 @@ function getFallbackMentorPlan(topic: string, level: string, goal: string): Ment
     prerequisites: [
       `Basic computer literacy and text editor installation`,
       `Familiarity with fundamental concepts related to ${normalizedTopic}`,
-      `A desire to learn and practice coding daily`
+      `A desire to learn and practice coding daily`,
     ],
     concepts: [
       {
         name: `Core Fundamentals of ${normalizedTopic}`,
         explanation: `Introduction to the foundational syntax, structures, and tools essential to working with ${normalizedTopic}.`,
-        example: `Setting up your environment, writing basic commands/scripts, and executing your first simple application.`
+        example: `Setting up your environment, writing basic commands/scripts, and executing your first simple application.`,
       },
       {
         name: `Working with Structured Data`,
         explanation: `Understanding how variables, collections, or data objects are manipulated and managed within ${normalizedTopic}.`,
-        example: `Declaring objects/arrays, querying lists, and passing datasets through operational functions.`
+        example: `Declaring objects/arrays, querying lists, and passing datasets through operational functions.`,
       },
       {
         name: `Integration & Best Practices`,
         explanation: `Applying architectural patterns, security controls, and clean code principles to build sustainable systems.`,
-        example: `Refactoring spaghetti code into organized modules, writing unit tests, and structuring file directories.`
+        example: `Refactoring spaghetti code into organized modules, writing unit tests, and structuring file directories.`,
       },
       {
         name: `Debugging and Error Management`,
         explanation: `Strategies for reading logs, handling exceptions, and troubleshooting issues that arise during execution.`,
-        example: `Using try-catch blocks and breakpoints to isolate and resolve unexpected runtime crashes.`
+        example: `Using try-catch blocks and breakpoints to isolate and resolve unexpected runtime crashes.`,
       },
       {
         name: `Project Deployment`,
         explanation: `Taking local source code and hosting it on a remote server, cloud provider, or platform for public access.`,
-        example: `Configuring deployment scripts, setting up environment variables, and publishing to GitHub.`
-      }
+        example: `Configuring deployment scripts, setting up environment variables, and publishing to GitHub.`,
+      },
     ],
     practiceTasks: [
       `Set up your development workspace and write a hello-world program in ${normalizedTopic}`,
       `Create a simple mini-project demonstrating core logic and data operations`,
       `Refactor a previous code sample to implement modular patterns and error handling`,
       `Write 3 automated tests targeting edge cases in your ${normalizedTopic} code`,
-      `Deploy your project to a staging or production hosting environment`
+      `Deploy your project to a staging or production hosting environment`,
     ],
     nextSteps: [
       `Deep dive into advanced topics like asynchronous design or performance optimization`,
       `Join community forums, read official documentation, and review open-source repositories`,
-      `Build a complex portfolio project utilizing all concepts from this roadmap`
+      `Build a complex portfolio project utilizing all concepts from this roadmap`,
     ],
-    estimatedHours: 15
+    estimatedHours: 15,
   };
 }
 
@@ -446,7 +531,11 @@ JSON shape:
   "dailySchedule": string[] (5-8 items),
   "interviewPrep": string[] (5-8 items)
 }`;
-    return callJson(RoadmapSchema, prompt, getFallbackRoadmap(data.role, data.timeframe, data.level, data.dailyHours));
+    return callJson(
+      RoadmapSchema,
+      prompt,
+      getFallbackRoadmap(data.role, data.timeframe, data.level, data.dailyHours),
+    );
   });
 
 export const generateStudyGuide = createServerFn({ method: "POST" })
@@ -481,11 +570,28 @@ JSON shape:
 {
   "title": string,
   "summary": string,
-  "weeks": [{ "week": number, "focus": string, "tasks": string[], "resources": string[] }],
-  "miniProjects": string[],
-  "quizzes": string[]
+  "modules": [
+    {
+      "id": "kebab-case-id",
+      "title": string,
+      "learn": "Concept explanation (2-4 paragraphs). Be detailed and educational.",
+      "visualize": "A textual representation or diagram of the concept (e.g. ASCII art, Mermaid-like syntax, or visual descriptions)",
+      "practice": ["Exercise 1", "Exercise 2", "Exercise 3"],
+      "build": {
+        "title": "Mini Project Title",
+        "description": "What to build and how it applies the concept."
+      },
+      "test": [
+        {
+          "question": "A multiple choice question testing the concept?",
+          "options": ["Option A", "Option B", "Option C", "Option D"],
+          "answer": "Option B"
+        }
+      ]
+    }
+  ]
 }
-Generate 4-8 weeks.`;
+Generate 4-6 modules covering a logical progression from basic to advanced.`;
 
     const generated = await callJson(
       StudyGuideSchema,
@@ -499,7 +605,7 @@ Generate 4-8 weeks.`;
         await supabaseAdmin.from("roadmap_cache").upsert({
           domain: cacheKey,
           tier: "study-guide-global",
-          content: generated as any,
+          content: generated as unknown as Json,
           generated_by: "AI",
           model: "google/gemini-2.5-flash",
           version: "1.0",
@@ -543,7 +649,11 @@ JSON shape (every field required, generate rich detail):
   "starterSnippets": [{ "filename": string, "language": string, "code": string }] (3-5 real, useful code snippets),
   "estimatedTimeline": string
 }`;
-    return callJson(BuildBlueprintSchema, prompt, getFallbackBuildBlueprint(data.title, data.description, data.technologies));
+    return callJson(
+      BuildBlueprintSchema,
+      prompt,
+      getFallbackBuildBlueprint(data.title, data.description, data.technologies),
+    );
   });
 
 export const generateMentorPlan = createServerFn({ method: "POST" })
@@ -565,7 +675,11 @@ JSON shape:
   "nextSteps": string[] (3-5),
   "estimatedHours": number
 }`;
-    return callJson(MentorPlanSchema, prompt, getFallbackMentorPlan(data.topic, data.level, data.goal));
+    return callJson(
+      MentorPlanSchema,
+      prompt,
+      getFallbackMentorPlan(data.topic, data.level, data.goal),
+    );
   });
 
 export const generateProjectPrototypeCode = createServerFn({ method: "POST" })
@@ -585,7 +699,8 @@ CRITICAL REQUIREMENTS:
 5. The response must be ONLY the raw HTML code. Do NOT wrap it in markdown code fences or backticks.`;
 
     const { text } = await generateTextResilient({
-      system: "You are a web page builder. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
+      system:
+        "You are a web page builder. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
       prompt,
     });
 
@@ -617,7 +732,8 @@ CRITICAL REQUIREMENTS:
 4. Return ONLY the raw HTML code. Do NOT wrap the output in markdown code fences or triple backticks. Start directly with <!DOCTYPE html>.`;
 
     const { text } = await generateTextResilient({
-      system: "You are a web page builder. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
+      system:
+        "You are a web page builder. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
       prompt,
     });
 

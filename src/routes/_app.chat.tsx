@@ -150,10 +150,7 @@ function ChatLayout() {
       {/* Mobile Sidebar Drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 flex md:hidden" onClick={() => setMobileOpen(false)}>
-          <div
-            className="glass w-72 flex flex-col shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="glass w-72 flex flex-col shadow-2xl" onClick={(e) => e.stopPropagation()}>
             <ThreadList />
           </div>
           <div className="flex-1 bg-black/50" />
@@ -173,7 +170,7 @@ function ChatLayout() {
           </button>
           <span className="truncate text-xs text-muted-foreground flex-1 text-center">
             {params.threadId
-              ? threads?.find(t => t.id === params.threadId)?.title || "Chat"
+              ? threads?.find((t) => t.id === params.threadId)?.title || "Chat"
               : "New Conversation"}
           </span>
           <button
@@ -182,7 +179,11 @@ function ChatLayout() {
             className="rounded-lg bg-gradient-spark p-1.5 text-primary-foreground shadow-glow disabled:opacity-50"
             aria-label="New chat"
           >
-            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
+            {creating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Plus className="h-3.5 w-3.5" />
+            )}
           </button>
         </div>
 

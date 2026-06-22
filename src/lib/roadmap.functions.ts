@@ -1,9 +1,20 @@
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
-import { generateTextResilient, generateObjectResilient, generateResourceObjectResilient } from "./ai-gateway";
+import type { Json } from "@/integrations/supabase/types";
+import {
+  generateTextResilient,
+  generateObjectResilient,
+  generateResourceObjectResilient,
+} from "./ai-gateway";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { supabaseAdmin } from "@/integrations/supabase/client.server";
-import { getSeededRoadmap, type RoadmapTier, type Tier, type RoadmapNode, FALLBACK_CURRICULA } from "./roadmap-catalog";
+import {
+  getSeededRoadmap,
+  type RoadmapTier,
+  type Tier,
+  type RoadmapNode,
+  FALLBACK_CURRICULA,
+} from "./roadmap-catalog";
 import { DOMAIN_BY_SLUG } from "./domains";
 import { getModel, SYSTEM, extractJson } from "./ai.functions";
 import { getFallbackMindmapAndResources } from "./resource-engine";
@@ -34,6 +45,7 @@ const TierSchema = z.object({
       outcome: z.string(),
       hours: z.coerce.number().min(0),
       difficulty: z.enum(["easy", "medium", "hard"]),
+      importanceScore: z.coerce.number().min(1).max(10),
       skills: z.array(z.string()).optional(),
       tools: z.array(z.string()).optional(),
       interviewTopics: z.array(z.string()).optional(),
@@ -45,17 +57,17 @@ const TierSchema = z.object({
           title: z.string(),
           brief: z.string(),
           difficulty: z.enum(["easy", "medium", "hard"]),
-        })
+        }),
       ),
-    })
+      quizzes: z.array(z.string()),
+    }),
   ),
 });
-
 
 function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
   const domain = DOMAIN_BY_SLUG[slug];
   const name = domain?.name ?? slug;
-  
+
   // Check if we have pre-seeded domain-specific fallback nodes
   const domainCurriculum = FALLBACK_CURRICULA[slug]?.[tier];
   if (domainCurriculum && domainCurriculum.length > 0) {
@@ -65,7 +77,7 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
       nodes: domainCurriculum,
     };
   }
-  
+
   const nodes: RoadmapNode[] = [
     {
       id: `${slug}-${tier}-1`,
@@ -83,10 +95,10 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
         {
           type: "doc",
           title: `Official ${name} Documentation`,
-          url: `https://www.google.com/search?q=${encodeURIComponent(name + ' official documentation')}`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(name + " official documentation")}`,
           difficulty: "beginner",
           rating: 4.9,
-          free: true
+          free: true,
         },
         {
           type: "youtube",
@@ -96,16 +108,16 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
           channel: "Tech Guides",
           difficulty: "beginner",
           rating: 4.8,
-          free: true
-        }
+          free: true,
+        },
       ],
       projects: [
         {
           title: `Simple ${name} Starter`,
           brief: `A basic project to test installation, configuration, and fundamental APIs of ${name}.`,
-          difficulty: "easy"
-        }
-      ]
+          difficulty: "easy",
+        },
+      ],
     },
     {
       id: `${slug}-${tier}-2`,
@@ -123,10 +135,10 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
         {
           type: "blog",
           title: `Best Practices in ${name}`,
-          url: `https://www.google.com/search?q=${encodeURIComponent(name + ' architecture best practices')}`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(name + " architecture best practices")}`,
           difficulty: "intermediate",
           rating: 4.7,
-          free: true
+          free: true,
         },
         {
           type: "youtube",
@@ -136,16 +148,16 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
           channel: "Code Mastery",
           difficulty: "intermediate",
           rating: 4.8,
-          free: true
-        }
+          free: true,
+        },
       ],
       projects: [
         {
           title: `${name} Advanced Application`,
           brief: `Build a mid-sized component implementing data binding, routing, or state updates.`,
-          difficulty: "medium"
-        }
-      ]
+          difficulty: "medium",
+        },
+      ],
     },
     {
       id: `${slug}-${tier}-3`,
@@ -163,10 +175,10 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
         {
           type: "github",
           title: `${name} Boilerplate Repository`,
-          url: `https://github.com/search?q=${encodeURIComponent(name + ' template')}`,
+          url: `https://github.com/search?q=${encodeURIComponent(name + " template")}`,
           difficulty: "intermediate",
           rating: 4.6,
-          free: true
+          free: true,
         },
         {
           type: "youtube",
@@ -176,16 +188,16 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
           channel: "Dev channel",
           difficulty: "intermediate",
           rating: 4.5,
-          free: true
-        }
+          free: true,
+        },
       ],
       projects: [
         {
           title: `Advanced ${name} Deployment`,
           brief: `A stateful tracker that syncs updates dynamically.`,
-          difficulty: "medium"
-        }
-      ]
+          difficulty: "medium",
+        },
+      ],
     },
     {
       id: `${slug}-${tier}-4`,
@@ -203,10 +215,10 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
         {
           type: "doc",
           title: `Testing ${name} Applications`,
-          url: `https://www.google.com/search?q=${encodeURIComponent(name + ' testing guide')}`,
+          url: `https://www.google.com/search?q=${encodeURIComponent(name + " testing guide")}`,
           difficulty: "advanced",
           rating: 4.8,
-          free: true
+          free: true,
         },
         {
           type: "youtube",
@@ -216,23 +228,23 @@ function generateTierFallback(slug: string, tier: Tier): RoadmapTier {
           channel: "Tech optimization",
           difficulty: "advanced",
           rating: 4.9,
-          free: true
-        }
+          free: true,
+        },
       ],
       projects: [
         {
           title: `Optimized Production Release`,
           brief: `Audit an existing project, write tests, optimize load times by 30%.`,
-          difficulty: "hard"
-        }
-      ]
-    }
+          difficulty: "hard",
+        },
+      ],
+    },
   ];
 
   return {
     tier,
     summary: `A comprehensive ${tier} learning path for ${name} covering core concepts, modules, state management, and production readiness.`,
-    nodes
+    nodes,
   };
 }
 
@@ -254,6 +266,7 @@ Return JSON shaped exactly as:
       "outcome": "What the learner can do after",
       "hours": 10,
       "difficulty": "easy" | "medium" | "hard",
+      "importanceScore": 8,
       "skills": ["skill-name-1", "skill-name-2"],
       "tools": ["tool-name-1", "tool-name-2"],
       "interviewTopics": ["topic-1", "topic-2"],
@@ -263,7 +276,7 @@ Return JSON shaped exactly as:
         { 
           "type": "doc" | "youtube" | "github" | "blog" | "practice",
           "title": "...", 
-          "url": "Must be a search query URL (e.g. https://www.youtube.com/results?search_query=... or https://www.google.com/search?q=... or https://github.com/search?q=...). DO NOT guess direct URLs to avoid 404s.",
+          "url": "Must be a search query URL (e.g. https://www.youtube.com/results?search_query=... or https://www.google.com/search?q=... or https://github.com/search?q=...). DO NOT guess direct URLs.",
           "channel": "(youtube only)", 
           "videoId": "",
           "author": "Author or Publisher name",
@@ -273,16 +286,18 @@ Return JSON shaped exactly as:
           "free": true
         }
       ],
-      "projects": [{ "title": "...", "brief": "...", "difficulty": "easy|medium|hard" }]
+      "projects": [{ "title": "...", "brief": "...", "difficulty": "easy|medium|hard" }],
+      "quizzes": ["Question 1 about this topic?", "Question 2 about this topic?"]
     }
   ]
 }
 
 Rules:
-- 5 to 8 ordered nodes, each with 3-5 real, high-quality resources.
-- For resources, ALWAYS generate search URLs instead of direct links. For YouTube, use https://www.youtube.com/results?search_query=... For Docs/Blogs use https://www.google.com/search?q=... For GitHub use https://github.com/search?q=...
-- Each node must have at least 1 project.
-- Prereq ids must reference earlier nodes in this tier (or [] for first nodes).
+- Generate a Graph structure, not a linear array. Use 'prerequisites' to branch into parallel tracks (e.g. Node A unlocks Node B and Node C).
+- 5 to 10 nodes, covering a comprehensive skill tree.
+- For resources, ALWAYS generate search URLs instead of direct links to avoid 404s.
+- Each node must have at least 1 project and 2-3 quizzes.
+- Prereq ids must reference earlier nodes in this tier (or [] for root nodes).
 `;
 
   for (let attempt = 0; attempt < 2; attempt++) {
@@ -292,7 +307,7 @@ Rules:
         prompt,
         temperature: attempt === 0 ? 0.6 : 0.3,
         schema: TierSchema,
-      } as any);
+      } as unknown as Parameters<typeof generateResourceObjectResilient>[0] & { schema: unknown });
       return object as unknown as RoadmapTier;
     } catch (e) {
       console.error("[roadmap] AI error", e);
@@ -304,9 +319,8 @@ Rules:
 export const getRoadmap = createServerFn({ method: "POST" })
   .inputValidator((d: { slug: string; tier: Tier }) => d)
   .handler(async ({ data }) => {
-    // 1. Seeded?
-    const seeded = getSeededRoadmap(data.slug, data.tier);
-    if (seeded) return { source: "seed" as const, content: seeded };
+    // 1. Force AI Generation by ignoring seeds. We want unique graphs.
+    // We keep the API signature the same so the UI doesn't break.
 
     // 2. Cached?
     try {
@@ -319,8 +333,15 @@ export const getRoadmap = createServerFn({ method: "POST" })
       if (cached?.content) {
         const content = cached.content as unknown as RoadmapTier;
         // Ignore the cache if it's the old generic 4-node fallback, so we load the new beautiful domain-specific curricula
-        const isGenericFallback = !content.nodes || content.nodes.length === 4 &&
-          content.nodes.some(n => n.id.endsWith("-1") || n.title.includes("Core Components & Architecture") || n.title.includes("State Management & Data Flow"));
+        const isGenericFallback =
+          !content.nodes ||
+          (content.nodes.length === 4 &&
+            content.nodes.some(
+              (n) =>
+                n.id.endsWith("-1") ||
+                n.title.includes("Core Components & Architecture") ||
+                n.title.includes("State Management & Data Flow"),
+            ));
         if (!isGenericFallback) {
           return { source: "cache" as const, content };
         }
@@ -331,13 +352,15 @@ export const getRoadmap = createServerFn({ method: "POST" })
 
     // 3. Cache Miss: Generate AI custom track synchronously
     try {
-      console.log(`[roadmap] Cache miss for ${data.slug} (${data.tier}). Generating custom track synchronously.`);
+      console.log(
+        `[roadmap] Cache miss for ${data.slug} (${data.tier}). Generating custom track synchronously.`,
+      );
       const generated = await generateTierWithAI(data.slug, data.tier);
       try {
         await supabaseAdmin.from("roadmap_cache").upsert({
           domain: data.slug,
           tier: data.tier,
-          content: generated as any,
+          content: generated as unknown as Json,
           generated_by: "AI",
           model: "google/gemini-2.5-flash",
           version: "1.0",
@@ -354,7 +377,7 @@ export const getRoadmap = createServerFn({ method: "POST" })
         await supabaseAdmin.from("roadmap_cache").upsert({
           domain: data.slug,
           tier: data.tier,
-          content: fallback as any,
+          content: fallback as unknown as Json,
           generated_by: "fallback",
           model: "static",
           version: "1.0",
@@ -385,9 +408,9 @@ const StudyGuideNodeSchema = z.object({
 
 export const generateNodeStudyGuide = createServerFn({ method: "POST" })
   .inputValidator((d: { slug: string; tier: Tier; nodeId: string; nodeTitle: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<z.infer<typeof StudyGuideNodeSchema>> => {
     const cacheKey = `${data.slug}:${data.nodeId}`;
-    
+
     // 1. Check cache first
     try {
       const { data: cached } = await supabaseAdmin
@@ -397,7 +420,7 @@ export const generateNodeStudyGuide = createServerFn({ method: "POST" })
         .eq("tier", "study-guide")
         .maybeSingle();
       if (cached?.content) {
-        return cached.content as any;
+        return cached.content as unknown as z.infer<typeof StudyGuideNodeSchema>;
       }
     } catch (e) {
       console.warn("[study-guide] Cache read failed:", e);
@@ -408,22 +431,22 @@ export const generateNodeStudyGuide = createServerFn({ method: "POST" })
         `Core fundamentals of ${data.nodeTitle}`,
         `Best practices and design patterns in ${data.nodeTitle}`,
         `Integration and common pitfalls of ${data.nodeTitle}`,
-        `Advanced optimization techniques`
+        `Advanced optimization techniques`,
       ],
       how: [
         `Review documentation for ${data.nodeTitle}`,
         `Set up a local sandbox environment`,
         `Build a simple demo utilizing ${data.nodeTitle}`,
-        `Conduct code reviews on open source examples`
+        `Conduct code reviews on open source examples`,
       ],
       practice: [
         `Write a clean implementation of ${data.nodeTitle}`,
         `Create test cases covering edge cases`,
-        `Profile memory and execution performance`
+        `Profile memory and execution performance`,
       ],
       mini_project: {
         title: `${data.nodeTitle} Sandbox`,
-        brief: `Create a fully-featured, production-ready implementation showcasing ${data.nodeTitle} with clean code practices and comprehensive tests.`
+        brief: `Create a fully-featured, production-ready implementation showcasing ${data.nodeTitle} with clean code practices and comprehensive tests.`,
       },
       quiz: [
         {
@@ -432,9 +455,9 @@ export const generateNodeStudyGuide = createServerFn({ method: "POST" })
             "Improves system performance and modularity",
             "Reduces development cost to zero",
             "Eliminates the need for testing",
-            "Forces the application to run multi-threaded"
+            "Forces the application to run multi-threaded",
           ],
-          answer: 0
+          answer: 0,
         },
         {
           q: `Which of the following is a common pitfall when using ${data.nodeTitle}?`,
@@ -442,9 +465,9 @@ export const generateNodeStudyGuide = createServerFn({ method: "POST" })
             "Over-engineering simple implementations",
             "Complete loss of network connectivity",
             "Compiler deprecation of all features",
-            "Immediate database lockouts"
+            "Immediate database lockouts",
           ],
-          answer: 0
+          answer: 0,
         },
         {
           q: `How should you structure testing for ${data.nodeTitle}?`,
@@ -452,11 +475,11 @@ export const generateNodeStudyGuide = createServerFn({ method: "POST" })
             "By isolating core logic and testing edge cases",
             "By writing no tests and letting users report bugs",
             "By compiling only on local machines",
-            "By testing only database connectivity"
+            "By testing only database connectivity",
           ],
-          answer: 0
-        }
-      ]
+          answer: 0,
+        },
+      ],
     };
 
     const generatePromise = (async () => {
@@ -473,12 +496,14 @@ Rules: 4-6 items per list. Exactly 5 quiz items. Real, modern best practices.`;
 
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
-          const { object } = await generateObjectResilient({
+          const { object } = await generateResourceObjectResilient({
             system: SYSTEM,
             prompt,
             temperature: attempt === 0 ? 0.5 : 0.3,
             schema: StudyGuideNodeSchema,
-          } as any);
+          } as unknown as Parameters<typeof generateResourceObjectResilient>[0] & {
+            schema: unknown;
+          });
           const parsed = object;
 
           // Save to database cache in background
@@ -487,7 +512,7 @@ Rules: 4-6 items per list. Exactly 5 quiz items. Real, modern best practices.`;
               await supabaseAdmin.from("roadmap_cache").upsert({
                 domain: cacheKey,
                 tier: "study-guide",
-                content: parsed as any,
+                content: parsed as unknown as Json,
                 generated_by: "AI",
                 model: "google/gemini-2.5-flash",
                 version: "1.0",
@@ -498,7 +523,7 @@ Rules: 4-6 items per list. Exactly 5 quiz items. Real, modern best practices.`;
             }
           })();
 
-          return parsed;
+          return parsed as z.infer<typeof StudyGuideNodeSchema>;
         } catch (error) {
           console.error(`[StudyGuide] AI attempt ${attempt + 1} failed:`, error);
         }
@@ -531,7 +556,7 @@ const CustomRoadmapSchema = z.object({
 
 export const generateCustomRoadmap = createServerFn({ method: "POST" })
   .inputValidator((d: { goal: string; timeframe: string; level: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<z.infer<typeof CustomRoadmapSchema>> => {
     const prompt = `Create a personalized week-by-week roadmap.
 Goal: ${data.goal}
 Timeframe: ${data.timeframe}
@@ -549,8 +574,8 @@ Use real, well-known resources.`;
       prompt,
       temperature: 0.6,
       schema: CustomRoadmapSchema,
-    } as any);
-    return object;
+    } as unknown as Parameters<typeof generateResourceObjectResilient>[0] & { schema: unknown });
+    return object as z.infer<typeof CustomRoadmapSchema>;
   });
 
 export const toggleNodeProgress = createServerFn({ method: "POST" })
@@ -606,9 +631,7 @@ export const getAllDomainsProgress = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .handler(async ({ context }) => {
     const { supabase } = context;
-    const { data: rows, error } = await supabase
-      .from("node_progress")
-      .select("domain,status");
+    const { data: rows, error } = await supabase.from("node_progress").select("domain,status");
     if (error) throw new Error(error.message);
 
     const result: Record<string, { completedCount: number; totalCount: number }> = {};
@@ -627,16 +650,53 @@ export const getAllDomainsProgress = createServerFn({ method: "POST" })
 const NodeResourcesAndMindmapSchema = z.object({
   resources: z.array(
     z.object({
-      type: z.enum(["doc", "youtube", "github", "blog", "practice"]),
+      type: z.enum([
+        "doc",
+        "youtube",
+        "github",
+        "article",
+        "course",
+        "book",
+        "cheatsheet",
+        "practice",
+      ]),
       title: z.string(),
       url: z.string(),
       channel: z.string().optional(),
       videoId: z.string().optional(),
       duration: z.string().optional(),
-      rating: z.coerce.number().optional(),
+      difficulty: z.string().optional(),
+      qualityScore: z.coerce.number().optional(),
+      tier: z.number().min(1).max(5).optional(),
       free: z.boolean().optional(),
-    })
+      author: z.string().optional(),
+      rating: z.coerce.number().optional(),
+    }),
   ),
+  knowledgeMap: z.object({
+    concepts: z.array(z.string()),
+    subtopics: z.array(z.string()),
+    dependencies: z.array(z.string()),
+    careerRelevance: z.string(),
+    industryUsage: z.array(z.string()),
+    estimatedHours: z.number(),
+    difficulty: z.string(),
+    commonMistakes: z.array(z.string()),
+    bestPractices: z.array(z.string()),
+    interviewRelevance: z.array(z.string()),
+    projectApplications: z.array(z.string()),
+  }),
+  projects: z.object({
+    beginner: z.object({ title: z.string(), description: z.string() }),
+    intermediate: z.object({ title: z.string(), description: z.string() }),
+    advanced: z.object({ title: z.string(), description: z.string() }),
+    startupIdea: z.object({ title: z.string(), description: z.string() }),
+    researchIdea: z.object({ title: z.string(), description: z.string() }),
+    finalYear: z.object({ title: z.string(), description: z.string() }),
+    industry: z.object({ title: z.string(), description: z.string() }),
+    openSource: z.object({ title: z.string(), description: z.string() }),
+    portfolio: z.object({ title: z.string(), description: z.string() }),
+  }),
   mindmap: z.object({
     nodes: z.array(
       z.object({
@@ -647,23 +707,25 @@ const NodeResourcesAndMindmapSchema = z.object({
         source: z.string().optional(),
         x: z.number(),
         y: z.number(),
-      })
+        color: z.string().optional(),
+      }),
     ),
     edges: z.array(
       z.object({
         id: z.string(),
         source: z.string(),
         target: z.string(),
-      })
+        animated: z.boolean().optional(),
+      }),
     ),
   }),
 });
 
 export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" })
   .inputValidator((d: { slug: string; tier: Tier; nodeId: string; nodeTitle: string }) => d)
-  .handler(async ({ data }) => {
+  .handler(async ({ data }): Promise<z.infer<typeof NodeResourcesAndMindmapSchema>> => {
     const cacheKey = `${data.slug}:${data.nodeId}`;
-    
+
     // 1. Check cache first
     try {
       const { data: cached } = await supabaseAdmin
@@ -673,7 +735,7 @@ export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" }
         .eq("tier", "resources-mindmap-v2")
         .maybeSingle();
       if (cached?.content) {
-        return cached.content as any;
+        return cached.content as unknown as z.infer<typeof NodeResourcesAndMindmapSchema>;
       }
     } catch (e) {
       console.warn("[resources-mindmap] Cache read failed:", e);
@@ -683,40 +745,68 @@ export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" }
 
     const generatePromise = (async () => {
       const domain = DOMAIN_BY_SLUG[data.slug]?.name ?? data.slug;
-      
+
       // Fetch real search results to ground the AI's resource URLs
-      const searchResults = await searchWeb(`${data.nodeTitle} ${domain} best tutorial OR documentation OR github`);
-      const searchContext = searchResults.map(r => `- [${r.title}](${r.url}): ${r.description}`).join("\n");
+      const searchResults = await searchWeb(
+        `${data.nodeTitle} ${domain} best tutorial OR documentation OR github`,
+      );
+      const searchContext = searchResults
+        .map((r) => `- [${r.title}](${r.url}): ${r.description}`)
+        .join("\n");
 
-      const prompt = `You are a world-class AI learning assistant. Find the most accurate, real-world, high-quality learning resources and design a customized circular interactive mindmap for the topic "${data.nodeTitle}" inside the domain "${domain}" (${data.tier}).
+      const prompt = `You are an elite AI learning engineer. Design an adaptive learning ecosystem for the topic "${data.nodeTitle}" inside the domain "${domain}" (${data.tier}).
 
-      CRITICAL INSTRUCTION FOR RESOURCES:
-      Here are REAL web search results for this topic:
+      CRITICAL TRUSTED RESOURCES INSTRUCTION:
+      You MUST only provide resources from highly trusted sources. 
+      - Docs: MDN, React Docs, Next.js Docs, Python Docs, TensorFlow, PyTorch, AWS, Kubernetes.
+      - Videos: freeCodeCamp, Fireship, Traversy Media, Tech With Tim, CodeWithHarry, Krish Naik.
+      - Courses: Coursera, edX, MIT OCW, Harvard CS50.
+      - Repositories: Official GitHub repos.
+      Do NOT surface random low-quality blogs. Use the provided REAL web search results to ground your URLs:
       ${searchContext}
 
-      You MUST use the REAL URLs from the search results above whenever possible. 
-      If you cannot find a perfect URL in the search results, you MUST generate a search query URL (e.g. https://www.youtube.com/results?search_query=topic or https://www.google.com/search?q=topic).
-      DO NOT GUESS OR HALLUCINATE DIRECT URLS.
-
-      Instructions for URLs based on type if not using a search result:
-      1. "doc", "blog", "practice": Construct a Google search URL.
-      2. "youtube": Construct a YouTube search URL.
-      3. "github": Construct a GitHub search URL.
+      If you must generate search URLs because an exact link is missing, use domain-restricted queries (e.g., \`site:developer.mozilla.org ${data.nodeTitle}\`).
 
       Return JSON shaped exactly as:
       {
         "resources": [
           {
-            "type": "doc" | "youtube" | "github" | "blog" | "practice",
+            "type": "doc|youtube|github|article|course|book|cheatsheet|practice",
             "title": "Specific resource title",
-            "url": "A REAL URL from search context OR a search query URL. DO NOT guess direct links.",
-            "channel": "YouTube channel name (youtube type only)",
+            "url": "REAL URL or trusted search URL",
+            "channel": "YouTube channel (youtube type only)",
             "videoId": "",
-            "duration": "Duration (e.g., '15m' or '2h')",
-            "rating": 4.9,
+            "duration": "Duration (e.g., '15m')",
+            "difficulty": "Beginner|Intermediate|Advanced",
+            "qualityScore": 95,
+            "tier": 1,
             "free": true
           }
         ],
+        "knowledgeMap": {
+          "concepts": ["..."],
+          "subtopics": ["..."],
+          "dependencies": ["..."],
+          "careerRelevance": "...",
+          "industryUsage": ["..."],
+          "estimatedHours": 10,
+          "difficulty": "...",
+          "commonMistakes": ["..."],
+          "bestPractices": ["..."],
+          "interviewRelevance": ["..."],
+          "projectApplications": ["..."]
+        },
+        "projects": {
+          "beginner": { "title": "...", "description": "..." },
+          "intermediate": { "title": "...", "description": "..." },
+          "advanced": { "title": "...", "description": "..." },
+          "startupIdea": { "title": "...", "description": "..." },
+          "researchIdea": { "title": "...", "description": "..." },
+          "finalYear": { "title": "...", "description": "..." },
+          "industry": { "title": "...", "description": "..." },
+          "openSource": { "title": "...", "description": "..." },
+          "portfolio": { "title": "...", "description": "..." }
+        },
         "mindmap": {
           "nodes": [
             {
@@ -755,10 +845,10 @@ export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" }
       }
 
       Rules:
-      - resources list must contain at least 1 'doc', 2 'youtube' videos (with working videoIds), 1 'practice', 1 'github', and 1 'blog' (or cheatsheet).
-      - mindmap must contain 8-12 nodes specific to "${data.nodeTitle}". Spaced out coordinates around (0,0) (radius ~150 for main nodes, radius ~260 for leaves).
-      - each node in the mindmap MUST include 'info' (hover details) and 'source' (clickable reference link).
-      - Do not use generic structures. Create a unique, highly informative mindmap for "${data.nodeTitle}" with accurate sub-topics, tools, and concepts.`;
+      - Rank resources using tiers: Tier 1 (Docs), Tier 2 (Courses), Tier 3 (Videos), Tier 4 (GitHub), Tier 5 (Articles/Cheatsheets).
+      - Ensure NO duplicate or outdated tutorials are included.
+      - Mindmap must contain 8-12 nodes specific to "${data.nodeTitle}".
+      - Projects should strictly align with the user's roadmap node.`;
 
       for (let attempt = 0; attempt < 2; attempt++) {
         try {
@@ -767,7 +857,9 @@ export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" }
             prompt,
             temperature: attempt === 0 ? 0.5 : 0.3,
             schema: NodeResourcesAndMindmapSchema,
-          } as any);
+          } as unknown as Parameters<typeof generateResourceObjectResilient>[0] & {
+            schema: unknown;
+          });
           const parsed = object;
 
           // Save to database cache in background
@@ -776,7 +868,7 @@ export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" }
               await supabaseAdmin.from("roadmap_cache").upsert({
                 domain: cacheKey,
                 tier: "resources-mindmap-v2",
-                content: parsed as any,
+                content: parsed as unknown as Json,
                 generated_by: "AI",
                 model: "google/gemini-2.5-flash",
                 version: "1.0",
@@ -787,25 +879,25 @@ export const generateNodeResourcesAndMindmap = createServerFn({ method: "POST" }
             }
           })();
 
-          return parsed;
+          return parsed as z.infer<typeof NodeResourcesAndMindmapSchema>;
         } catch (error) {
           console.error(`[Resources & Mindmap] AI attempt ${attempt + 1} failed:`, error);
         }
       }
-      return fallback;
+      return fallback as z.infer<typeof NodeResourcesAndMindmapSchema>;
     })();
 
     try {
       return await generatePromise;
     } catch (e) {
-      return fallback;
+      return fallback as z.infer<typeof NodeResourcesAndMindmapSchema>;
     }
   });
 
 export const checkNodeCache = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d)
+  .inputValidator((d: { cacheKey: string }) => d)
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/lib/supabase-admin");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     const { data: cached } = await supabaseAdmin
       .from("roadmap_cache")
       .select("content")
@@ -816,16 +908,15 @@ export const checkNodeCache = createServerFn({ method: "POST" })
   });
 
 export const saveNodeCache = createServerFn({ method: "POST" })
-  .inputValidator((d: any) => d)
+  .inputValidator((d: { cacheKey: string; content: unknown }) => d)
   .handler(async ({ data }) => {
-    const { supabaseAdmin } = await import("@/lib/supabase-admin");
+    const { supabaseAdmin } = await import("@/integrations/supabase/client.server");
     await supabaseAdmin.from("roadmap_cache").upsert({
       domain: data.cacheKey,
       tier: "resources-mindmap-v2",
-      content: data.content,
+      content: data.content as Json,
       generated_by: "AI",
       model: "perplexity/sonar-deep-research",
     });
     return { success: true };
   });
-

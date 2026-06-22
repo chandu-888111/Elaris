@@ -101,12 +101,7 @@ async function callJson<T>(schema: z.ZodType<T>, prompt: string): Promise<T> {
 
 export const generateResume = createServerFn({ method: "POST" })
   .inputValidator(
-    (d: {
-      name: string;
-      targetRole: string;
-      rawDetails: string;
-      template: string;
-    }) => d,
+    (d: { name: string; targetRole: string; rawDetails: string; template: string }) => d,
   )
   .handler(async ({ data }): Promise<Resume> => {
     const prompt = `Build a premium AI-generated resume tailored to the target role.
@@ -200,7 +195,8 @@ Extract the details and return JSON with these exact fields:
 
 If any field is missing or cannot be inferred, provide a sensible default placeholder based on the context of the resume.`;
     return callJson(PortfolioDetailsSchema, prompt);
-  });function extractHtml(text: string): string {
+  });
+function extractHtml(text: string): string {
   // Try to match anything between <!DOCTYPE html> and </html> (inclusive, case-insensitive)
   const match = text.match(/<html[\s\S]*<\/html>/i) || text.match(/<!DOCTYPE[\s\S]*<\/html>/i);
   if (match) {
@@ -208,27 +204,30 @@ If any field is missing or cannot be inferred, provide a sensible default placeh
   }
   // Otherwise try to strip code fences manually if they exist
   let cleaned = text.trim();
-  const htmlBlockMatch = cleaned.match(/```html([\s\S]*?)```/i) || cleaned.match(/```([\s\S]*?)```/i);
+  const htmlBlockMatch =
+    cleaned.match(/```html([\s\S]*?)```/i) || cleaned.match(/```([\s\S]*?)```/i);
   if (htmlBlockMatch) {
     cleaned = htmlBlockMatch[1].trim();
   }
-  
+
   const lower = cleaned.toLowerCase();
-  if (!lower.includes("<html") && !lower.includes("<body") && !lower.includes("<div") && !lower.includes("<main") && !lower.includes("<section") && !lower.includes("<header")) {
+  if (
+    !lower.includes("<html") &&
+    !lower.includes("<body") &&
+    !lower.includes("<div") &&
+    !lower.includes("<main") &&
+    !lower.includes("<section") &&
+    !lower.includes("<header")
+  ) {
     console.error("[extractHtml] Failed to find HTML tags in AI output:", cleaned.slice(0, 300));
     throw new Error("AI failed to return valid HTML. Please try again or check API keys.");
   }
-  
+
   return cleaned;
 }
 
 export const generateCustomPortfolio = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: {
-      details: PortfolioDetails;
-      prompt: string;
-    }) => d,
-  )
+  .inputValidator((d: { details: PortfolioDetails; prompt: string }) => d)
   .handler(async ({ data }): Promise<{ html: string }> => {
     const prompt = `You are a world-class frontend engineer and UI/UX designer. Generate a complete, standalone, premium portfolio HTML page based on the candidate's details and the custom styling prompt.
     
@@ -255,7 +254,8 @@ Generate a single highly polished, responsive page. Use modern typography (e.g. 
 The output must be a single, complete HTML string including the full inline <style> block. Do NOT wrap the output in markdown code fences or backticks. Return ONLY the raw HTML code starting with <!DOCTYPE html>.`;
 
     const { text } = await generateTextResilient({
-      system: "You are a web page generator. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
+      system:
+        "You are a web page generator. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
       prompt,
     });
 
@@ -264,8 +264,8 @@ The output must be a single, complete HTML string including the full inline <sty
     // Heuristic fallback replacements to ensure placeholder details never leak
     const replacePlaceholder = (htmlText: string, search: string, replacement: string) => {
       if (!search || !replacement) return htmlText;
-      const escaped = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      return htmlText.replace(new RegExp(escaped, 'gi'), replacement);
+      const escaped = search.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+      return htmlText.replace(new RegExp(escaped, "gi"), replacement);
     };
 
     if (data.details.fullName) {
@@ -287,35 +287,53 @@ The output must be a single, complete HTML string including the full inline <sty
       cleaned = replacePlaceholder(cleaned, "linkedin.com/in/arun-spark", data.details.linkedin);
     }
     if (data.details.skills) {
-      cleaned = replacePlaceholder(cleaned, "TypeScript, React, Node.js, PyTorch, Python, Docker", data.details.skills);
+      cleaned = replacePlaceholder(
+        cleaned,
+        "TypeScript, React, Node.js, PyTorch, Python, Docker",
+        data.details.skills,
+      );
     }
     if (data.details.education) {
-      cleaned = replacePlaceholder(cleaned, "B.S. in Computer Science, Stanford University (2025)", data.details.education);
+      cleaned = replacePlaceholder(
+        cleaned,
+        "B.S. in Computer Science, Stanford University (2025)",
+        data.details.education,
+      );
     }
     if (data.details.experience) {
-      cleaned = replacePlaceholder(cleaned, "ML Engineer Intern at SparkLabs AI (Implemented vision transformer diagnostic pipelines)", data.details.experience);
+      cleaned = replacePlaceholder(
+        cleaned,
+        "ML Engineer Intern at SparkLabs AI (Implemented vision transformer diagnostic pipelines)",
+        data.details.experience,
+      );
     }
     if (data.details.projects) {
-      cleaned = replacePlaceholder(cleaned, "Custom RESP Engine (Rust) - in-memory key-value store, Interactive Mindmap (React) - visual graphs", data.details.projects);
+      cleaned = replacePlaceholder(
+        cleaned,
+        "Custom RESP Engine (Rust) - in-memory key-value store, Interactive Mindmap (React) - visual graphs",
+        data.details.projects,
+      );
     }
     if (data.details.achievements) {
-      cleaned = replacePlaceholder(cleaned, "Hackathon Winner 2026, Dean's List (GPA 3.9/4.0)", data.details.achievements);
+      cleaned = replacePlaceholder(
+        cleaned,
+        "Hackathon Winner 2026, Dean's List (GPA 3.9/4.0)",
+        data.details.achievements,
+      );
     }
     if (data.details.hobbies) {
-      cleaned = replacePlaceholder(cleaned, "Chess, Watching Cricket, Hiking", data.details.hobbies);
+      cleaned = replacePlaceholder(
+        cleaned,
+        "Chess, Watching Cricket, Hiking",
+        data.details.hobbies,
+      );
     }
 
     return { html: cleaned };
   });
 
 export const updateCustomPortfolio = createServerFn({ method: "POST" })
-  .inputValidator(
-    (d: {
-      html: string;
-      details: PortfolioDetails;
-      prompt: string;
-    }) => d,
-  )
+  .inputValidator((d: { html: string; details: PortfolioDetails; prompt: string }) => d)
   .handler(async ({ data }): Promise<{ html: string }> => {
     const prompt = `You are a world-class frontend engineer and UI/UX designer. Modify the following developer portfolio HTML page based on the update request.
     
@@ -345,7 +363,8 @@ CRITICAL REQUIREMENTS:
 2. Return ONLY the modified raw HTML starting with <!DOCTYPE html>. Do not wrap in triple backticks or markdown.`;
 
     const { text } = await generateTextResilient({
-      system: "You are a web page generator. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
+      system:
+        "You are a web page generator. Return ONLY the raw HTML code. Do not wrap in triple backticks or markdown.",
       prompt,
     });
 
@@ -354,8 +373,8 @@ CRITICAL REQUIREMENTS:
     // Heuristic fallback replacements to ensure details are correct
     const replacePlaceholder = (htmlText: string, search: string, replacement: string) => {
       if (!search || !replacement) return htmlText;
-      const escaped = search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&');
-      return htmlText.replace(new RegExp(escaped, 'gi'), replacement);
+      const escaped = search.replace(/[-/\\^$*+?.()|[\]{}]/g, "\\$&");
+      return htmlText.replace(new RegExp(escaped, "gi"), replacement);
     };
 
     if (data.details.fullName) {
@@ -371,4 +390,3 @@ CRITICAL REQUIREMENTS:
 
     return { html: cleaned };
   });
-

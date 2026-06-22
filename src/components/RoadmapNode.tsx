@@ -88,7 +88,7 @@ export function RoadmapNode({ data }: { data: NodeData }) {
 
       {/* Hover Info Card */}
       {hovered && (
-        <div className="absolute left-1/2 bottom-full z-30 mb-2 w-[280px] -translate-x-1/2 rounded-2xl border border-white/10 bg-popover p-4 shadow-glow backdrop-blur-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <div className="absolute left-1/2 bottom-full z-30 mb-2 w-[280px] -translate-x-1/2 rounded-2xl border border-white/10 bg-popover p-4 shadow-glow backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-150">
           <h4 className="font-display text-sm font-semibold text-foreground">{data.title}</h4>
           <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">{data.why}</p>
 

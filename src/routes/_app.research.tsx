@@ -32,18 +32,27 @@ const PAPERS: ResearchPaper[] = [
     authors: "Vaswani et al. (Google Research)",
     source: "NeurIPS 2017",
     category: "AI/ML",
-    abstract: "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.",
+    abstract:
+      "The dominant sequence transduction models are based on complex recurrent or convolutional neural networks. We propose a new simple network architecture, the Transformer, based solely on attention mechanisms.",
     summary: {
       contributions: [
         "Replaced RNNs and CNNs with self-attention layers.",
         "Introduced multi-head attention for parallel sequence modeling.",
-        "Significantly reduced training time while achieving SOTA translation results."
+        "Significantly reduced training time while achieving SOTA translation results.",
       ],
-      impact: "Laid the foundation for modern LLMs (GPT, Gemini, Claude)."
+      impact: "Laid the foundation for modern LLMs (GPT, Gemini, Claude).",
     },
     comments: [
-      { user: "ml_dev_99", text: "Truly seminal. The multi-head attention model is still the gold standard.", date: "2 hours ago" },
-      { user: "quantum_coder", text: "Agreed, though scaling costs are getting quadratic on long contexts.", date: "1 hour ago" }
+      {
+        user: "ml_dev_99",
+        text: "Truly seminal. The multi-head attention model is still the gold standard.",
+        date: "2 hours ago",
+      },
+      {
+        user: "quantum_coder",
+        text: "Agreed, though scaling costs are getting quadratic on long contexts.",
+        date: "1 hour ago",
+      },
     ],
     likes: 142,
   },
@@ -53,56 +62,67 @@ const PAPERS: ResearchPaper[] = [
     authors: "Dosovitskiy et al. (Google Brain)",
     source: "ICLR 2021",
     category: "AI/ML",
-    abstract: "While the Transformer architecture has become the de-facto standard for natural language processing, its applications to computer vision remain limited. We show that a pure transformer applied directly to patches of images performs very well.",
+    abstract:
+      "While the Transformer architecture has become the de-facto standard for natural language processing, its applications to computer vision remain limited. We show that a pure transformer applied directly to patches of images performs very well.",
     comments: [
-      { user: "vision_pioneer", text: "Vision Transformers (ViT) changed everything in medical imaging benchmarks.", date: "Yesterday" }
+      {
+        user: "vision_pioneer",
+        text: "Vision Transformers (ViT) changed everything in medical imaging benchmarks.",
+        date: "Yesterday",
+      },
     ],
     likes: 98,
   },
   {
     id: "paper-3",
-    title: "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing",
+    title:
+      "Resilient Distributed Datasets: A Fault-Tolerant Abstraction for In-Memory Cluster Computing",
     authors: "Zaharia et al. (UC Berkeley)",
     source: "NSDI 2012",
     category: "Systems",
-    abstract: "We present Resilient Distributed Datasets (RDDs), a distributed memory abstraction that lets programmers perform in-memory computations on large clusters in a fault-tolerant manner.",
+    abstract:
+      "We present Resilient Distributed Datasets (RDDs), a distributed memory abstraction that lets programmers perform in-memory computations on large clusters in a fault-tolerant manner.",
     comments: [],
     likes: 56,
-  }
+  },
 ];
 
 export function ResearchHub() {
   const [papers, setPapers] = useState<ResearchPaper[]>(PAPERS);
   const [selectedPaper, setSelectedPaper] = useState<ResearchPaper | null>(null);
-  
+
   // Custom comment state
   const [commentText, setCommentText] = useState("");
 
   const handleLike = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     playClick();
-    setPapers(prev => prev.map(p => {
-      if (p.id === id) {
-        return { ...p, likes: p.likes + 1 };
-      }
-      return p;
-    }));
+    setPapers((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          return { ...p, likes: p.likes + 1 };
+        }
+        return p;
+      }),
+    );
   };
 
   const handleBookmark = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     playClick();
-    setPapers(prev => prev.map(p => {
-      if (p.id === id) {
-        const bookmarked = !p.bookmarked;
-        if (bookmarked) {
-          awardXP(15, "Bookmarked research paper");
-          toast.success("Paper added to study repository.");
+    setPapers((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          const bookmarked = !p.bookmarked;
+          if (bookmarked) {
+            awardXP(15, "Bookmarked research paper");
+            toast.success("Paper added to study repository.");
+          }
+          return { ...p, bookmarked };
         }
-        return { ...p, bookmarked };
-      }
-      return p;
-    }));
+        return p;
+      }),
+    );
   };
 
   const handleAddComment = (e: React.FormEvent) => {
@@ -113,20 +133,22 @@ export function ResearchHub() {
     const newComment = {
       user: "you",
       text: commentText,
-      date: "Just now"
+      date: "Just now",
     };
 
-    setPapers(prev => prev.map(p => {
-      if (p.id === selectedPaper.id) {
-        const updated = {
-          ...p,
-          comments: [...p.comments, newComment]
-        };
-        setSelectedPaper(updated);
-        return updated;
-      }
-      return p;
-    }));
+    setPapers((prev) =>
+      prev.map((p) => {
+        if (p.id === selectedPaper.id) {
+          const updated = {
+            ...p,
+            comments: [...p.comments, newComment],
+          };
+          setSelectedPaper(updated);
+          return updated;
+        }
+        return p;
+      }),
+    );
     setCommentText("");
     awardXP(10, "Commented on research paper");
     toast.success("Discussion posted!");
@@ -135,26 +157,28 @@ export function ResearchHub() {
   const generateAISummary = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
     playSuccess();
-    setPapers(prev => prev.map(p => {
-      if (p.id === id) {
-        const updated = {
-          ...p,
-          summary: p.summary || {
-            contributions: [
-              "Formulated novel representations mapping patch networks.",
-              "Introduced modular layers allowing linear scalability.",
-              "Established benchmark validations surpassing traditional architectures."
-            ],
-            impact: "Enabled high fidelity deployments under low latency constraints."
-          }
-        };
-        if (selectedPaper?.id === id) setSelectedPaper(updated);
-        awardXP(25, "Generated paper AI summary");
-        toast.success("AI Summary generated successfully!");
-        return updated;
-      }
-      return p;
-    }));
+    setPapers((prev) =>
+      prev.map((p) => {
+        if (p.id === id) {
+          const updated = {
+            ...p,
+            summary: p.summary || {
+              contributions: [
+                "Formulated novel representations mapping patch networks.",
+                "Introduced modular layers allowing linear scalability.",
+                "Established benchmark validations surpassing traditional architectures.",
+              ],
+              impact: "Enabled high fidelity deployments under low latency constraints.",
+            },
+          };
+          if (selectedPaper?.id === id) setSelectedPaper(updated);
+          awardXP(25, "Generated paper AI summary");
+          toast.success("AI Summary generated successfully!");
+          return updated;
+        }
+        return p;
+      }),
+    );
   };
 
   return (
@@ -166,35 +190,47 @@ export function ResearchHub() {
       />
 
       <div className="grid gap-6 lg:grid-cols-[1fr_360px]">
-        
         {/* Left Side: Papers List */}
         <div className="space-y-4">
-          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">Recommended papers feed</div>
-          
+          <div className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+            Recommended papers feed
+          </div>
+
           <div className="space-y-3.5">
-            {papers.map(p => {
+            {papers.map((p) => {
               const isSelected = selectedPaper?.id === p.id;
               const catColors = {
                 "AI/ML": "bg-purple-500/10 border-purple-500/20 text-purple-400",
-                "Systems": "bg-blue-500/10 border-blue-500/20 text-blue-400",
-                "Security": "bg-red-500/10 border-red-500/20 text-red-400"
+                Systems: "bg-blue-500/10 border-blue-500/20 text-blue-400",
+                Security: "bg-red-500/10 border-red-500/20 text-red-400",
               };
               return (
                 <HolographicPanel
                   key={p.id}
                   className={`p-5 space-y-4 cursor-pointer transition ${isSelected ? "border-spark/50 bg-spark/5" : "hover:border-white/10"}`}
-                  onClick={() => { playClick(); setSelectedPaper(p); }}
+                  onClick={() => {
+                    playClick();
+                    setSelectedPaper(p);
+                  }}
                 >
                   <div className="flex justify-between items-start">
                     <div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${catColors[p.category]}`}>
+                        <span
+                          className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider border ${catColors[p.category]}`}
+                        >
                           {p.category}
                         </span>
-                        <span className="text-[10px] text-muted-foreground font-semibold">{p.source}</span>
+                        <span className="text-[10px] text-muted-foreground font-semibold">
+                          {p.source}
+                        </span>
                       </div>
-                      <h3 className="font-display text-sm font-bold text-foreground mt-2">{p.title}</h3>
-                      <p className="text-[10px] text-muted-foreground mt-0.5">Authors: {p.authors}</p>
+                      <h3 className="font-display text-sm font-bold text-foreground mt-2">
+                        {p.title}
+                      </h3>
+                      <p className="text-[10px] text-muted-foreground mt-0.5">
+                        Authors: {p.authors}
+                      </p>
                     </div>
 
                     <div className="flex gap-1.5 shrink-0">
@@ -207,7 +243,9 @@ export function ResearchHub() {
                     </div>
                   </div>
 
-                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">{p.abstract}</p>
+                  <p className="text-xs text-muted-foreground leading-relaxed line-clamp-3">
+                    {p.abstract}
+                  </p>
 
                   {/* AI Summary details */}
                   {p.summary && (
@@ -221,14 +259,18 @@ export function ResearchHub() {
                         ))}
                       </ul>
                       <div className="text-[11px] text-muted-foreground">
-                        <span className="font-bold text-foreground">Future Impact: </span> {p.summary.impact}
+                        <span className="font-bold text-foreground">Future Impact: </span>{" "}
+                        {p.summary.impact}
                       </div>
                     </div>
                   )}
 
                   {/* Actions inside list card */}
                   <div className="flex justify-between items-center text-xs pt-2 border-t border-white/5">
-                    <button onClick={(e) => handleLike(p.id, e)} className="flex items-center gap-1 text-muted-foreground hover:text-red-400 transition">
+                    <button
+                      onClick={(e) => handleLike(p.id, e)}
+                      className="flex items-center gap-1 text-muted-foreground hover:text-red-400 transition"
+                    >
                       <Icons.Heart className="h-4 w-4" />
                       <span>{p.likes} Likes</span>
                     </button>
@@ -255,12 +297,22 @@ export function ResearchHub() {
             {selectedPaper ? (
               <div className="flex flex-col justify-between h-full flex-1">
                 <div>
-                  <h3 className="font-display text-sm font-bold text-foreground">Discussions: {selectedPaper.title.substring(0, 30)}...</h3>
-                  <p className="text-[10px] text-muted-foreground mt-0.5">Participate in peer discussions & notes exchange.</p>
+                  <h3 className="font-display text-sm font-bold text-foreground">
+                    Discussions: {selectedPaper.title.substring(0, 30)}...
+                  </h3>
+                  <p className="text-[10px] text-muted-foreground mt-0.5">
+                    Participate in peer discussions & notes exchange.
+                  </p>
 
-                  <div className="mt-4 pt-4 border-t border-white/5 space-y-3 max-h-[220px] overflow-y-auto" data-lenis-prevent>
+                  <div
+                    className="mt-4 pt-4 border-t border-white/5 space-y-3 max-h-[220px] overflow-y-auto"
+                    data-lenis-prevent
+                  >
                     {selectedPaper.comments.map((comment, i) => (
-                      <div key={i} className="bg-white/2 border border-white/5 rounded-xl p-3 text-xs space-y-1">
+                      <div
+                        key={i}
+                        className="bg-white/2 border border-white/5 rounded-xl p-3 text-xs space-y-1"
+                      >
                         <div className="flex justify-between items-center">
                           <span className="font-bold text-foreground">@{comment.user}</span>
                           <span className="text-[9px] text-muted-foreground">{comment.date}</span>
@@ -276,15 +328,21 @@ export function ResearchHub() {
                   </div>
                 </div>
 
-                <form onSubmit={handleAddComment} className="mt-4 pt-4 border-t border-white/5 flex gap-2">
+                <form
+                  onSubmit={handleAddComment}
+                  className="mt-4 pt-4 border-t border-white/5 flex gap-2"
+                >
                   <input
                     value={commentText}
-                    onChange={e => setCommentText(e.target.value)}
+                    onChange={(e) => setCommentText(e.target.value)}
                     placeholder="Ask a question or comment..."
                     className="flex-1 rounded-xl border border-white/10 bg-background px-3 py-2 text-xs text-foreground outline-none focus:border-spark"
                     required
                   />
-                  <button type="submit" className="rounded-xl bg-gradient-spark px-4 py-2 text-xs font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition">
+                  <button
+                    type="submit"
+                    className="rounded-xl bg-gradient-spark px-4 py-2 text-xs font-semibold text-primary-foreground shadow-glow hover:opacity-95 transition"
+                  >
                     Comment
                   </button>
                 </form>
@@ -294,13 +352,13 @@ export function ResearchHub() {
                 <Icons.MessageSquare className="h-8 w-8 text-spark/40 animate-pulse mb-3" />
                 <h4 className="font-semibold text-xs text-muted-foreground">No Paper Selected</h4>
                 <p className="text-[10px] text-muted-foreground mt-1 px-4 leading-relaxed">
-                  Select a research paper from the feed to load discussion threads and draft AI summaries.
+                  Select a research paper from the feed to load discussion threads and draft AI
+                  summaries.
                 </p>
               </div>
             )}
           </HolographicPanel>
         </div>
-
       </div>
     </PageShell>
   );

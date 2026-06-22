@@ -4,9 +4,11 @@ import path from "node:path";
 
 // Ensure process.env is defined in strict runtime environments
 if (typeof process === "undefined") {
-  (globalThis as any).process = { env: {} };
+  (globalThis as typeof globalThis & { process: unknown }).process = {
+    env: {},
+  } as unknown as NodeJS.Process;
 } else if (!process.env) {
-  (process as any).env = {};
+  (process as unknown as { env: unknown }).env = {};
 }
 
 function loadEnvLocally() {
@@ -35,7 +37,10 @@ function loadEnvLocally() {
       }
     }
   } catch (e) {
-    console.log("[server] Local .env file skip (running in serverless worker):", (e as Error).message);
+    console.log(
+      "[server] Local .env file skip (running in serverless worker):",
+      (e as Error).message,
+    );
   }
 }
 

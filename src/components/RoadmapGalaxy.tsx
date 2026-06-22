@@ -1,4 +1,5 @@
-import { Canvas, useFrame, useThree } from "@react-three/fiber";
+import { SharedCanvas as Canvas } from "@/components/SharedCanvas";
+import { useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Sphere, Ring, Stars, Html, Trail } from "@react-three/drei";
 import { useRef, useMemo, useState, useEffect, Suspense } from "react";
 import * as THREE from "three";
@@ -30,18 +31,18 @@ function CameraController({ targetPosition }: { targetPosition: THREE.Vector3 | 
         y: targetCamY,
         z: targetCamZ,
         duration: duration,
-        ease: "power3.inOut"
+        ease: "power3.inOut",
       });
 
       if (controls) {
-        const orbitControls = controls as any;
+        const orbitControls = controls as unknown as { target: THREE.Vector3; update: () => void };
         gsap.to(orbitControls.target, {
           x: targetPosition.x,
           y: targetPosition.y,
           z: targetPosition.z,
           duration: duration,
           ease: "power3.inOut",
-          onUpdate: () => orbitControls.update()
+          onUpdate: () => orbitControls.update(),
         });
       }
     } else {
@@ -50,18 +51,18 @@ function CameraController({ targetPosition }: { targetPosition: THREE.Vector3 | 
         y: 3.0,
         z: 8,
         duration: duration,
-        ease: "power3.inOut"
+        ease: "power3.inOut",
       });
 
       if (controls) {
-        const orbitControls = controls as any;
+        const orbitControls = controls as unknown as { target: THREE.Vector3; update: () => void };
         gsap.to(orbitControls.target, {
           x: 0,
           y: 0,
           z: 0,
           duration: duration,
           ease: "power3.inOut",
-          onUpdate: () => orbitControls.update()
+          onUpdate: () => orbitControls.update(),
         });
       }
     }
@@ -79,7 +80,13 @@ function PlanetRing({ radius, color }: { radius: number; color: string }) {
   });
   return (
     <Ring ref={ref} args={[radius, radius + 0.08, 64]} rotation={[-Math.PI / 2.3, 0, 0]}>
-      <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.25} blending={THREE.AdditiveBlending} />
+      <meshBasicMaterial
+        color={color}
+        side={THREE.DoubleSide}
+        transparent
+        opacity={0.25}
+        blending={THREE.AdditiveBlending}
+      />
     </Ring>
   );
 }
@@ -106,7 +113,7 @@ function SubtopicMoons({ skills, planetRadius }: { skills?: string[]; planetRadi
         const z = Math.sin(angle) * orbitRadius;
 
         return (
-          <group key={idx} position={[x, Math.sin(angle)*0.2, z]}>
+          <group key={idx} position={[x, Math.sin(angle) * 0.2, z]}>
             <Sphere args={[0.06, 16, 16]}>
               <meshStandardMaterial color="#9ca3af" roughness={0.7} metalness={0.2} />
             </Sphere>
@@ -123,7 +130,13 @@ function SubtopicMoons({ skills, planetRadius }: { skills?: string[]; planetRadi
 }
 
 // Satellites represent Resources
-function ResourceSatellites({ resources, planetRadius }: { resources: RoadmapResource[]; planetRadius: number }) {
+function ResourceSatellites({
+  resources,
+  planetRadius,
+}: {
+  resources: RoadmapResource[];
+  planetRadius: number;
+}) {
   const groupRef = useRef<THREE.Group>(null);
   const sats = useMemo(() => resources.slice(0, 4), [resources]);
 
@@ -151,10 +164,10 @@ function ResourceSatellites({ resources, planetRadius }: { resources: RoadmapRes
               <meshBasicMaterial color="#38bdf8" />
             </Sphere>
             <Html distanceFactor={6} center position={[0.1, 0, 0]}>
-              <a 
-                href={res.url} 
-                target="_blank" 
-                rel="noreferrer" 
+              <a
+                href={res.url}
+                target="_blank"
+                rel="noreferrer"
                 onClick={(e) => e.stopPropagation()}
                 className="text-[5px] text-sky-200/70 hover:text-sky-400 font-mono tracking-widest uppercase whitespace-nowrap transition"
               >
@@ -371,32 +384,37 @@ export function RoadmapGalaxy({
   }, [selectedNode]);
 
   const statusTheme = useMemo(() => {
-    if (!nodeStatus) return { label: "Locked", badgeBg: "bg-red-500/10", badgeText: "text-red-400" };
+    if (!nodeStatus)
+      return { label: "Locked", badgeBg: "bg-red-500/10", badgeText: "text-red-400" };
     switch (nodeStatus) {
-      case "completed": return { label: "Completed", badgeBg: "bg-emerald-500/15", badgeText: "text-emerald-400" };
-      case "in_progress": return { label: "In Progress", badgeBg: "bg-purple-500/15", badgeText: "text-purple-400" };
-      case "available": return { label: "Available", badgeBg: "bg-sky-500/15", badgeText: "text-sky-400" };
-      default: return { label: "Locked", badgeBg: "bg-red-500/10", badgeText: "text-red-400" };
+      case "completed":
+        return { label: "Completed", badgeBg: "bg-emerald-500/15", badgeText: "text-emerald-400" };
+      case "in_progress":
+        return { label: "In Progress", badgeBg: "bg-purple-500/15", badgeText: "text-purple-400" };
+      case "available":
+        return { label: "Available", badgeBg: "bg-sky-500/15", badgeText: "text-sky-400" };
+      default:
+        return { label: "Locked", badgeBg: "bg-red-500/10", badgeText: "text-red-400" };
     }
   }, [nodeStatus]);
 
   return (
     <div className="relative h-full w-full bg-[#030014] rounded-3xl border border-white/10 overflow-hidden">
-      <Canvas camera={{ position: [0, 3.0, 8], fov: 45 }} dpr={[1, 1.5]}>
+      <Canvas camera={{ position: [0, 3.0, 8], fov: 45 }}>
         <Suspense fallback={null}>
           <ambientLight intensity={0.4} color={themeColors.ambient} />
           <pointLight position={[10, 10, 10]} intensity={1.5} color={themeColors.point1} />
           <pointLight position={[-10, -10, -10]} intensity={0.8} color={themeColors.point2} />
           <Stars radius={60} depth={30} count={800} factor={2} saturation={0.5} fade speed={0.4} />
-          
+
           <group position={[0, -0.5, 0]}>
             <ConnectionBeams nodes={nodes} total={total} />
-            
+
             {nodes.map((node, index) => {
               const isCompleted = completedIds.has(node.id);
               const isInProgress = inProgressIds.has(node.id);
               const isSelected = selectedNode?.id === node.id;
-              
+
               let status: "locked" | "available" | "in_progress" | "completed" = "locked";
               if (isCompleted) status = "completed";
               else if (isInProgress) status = "in_progress";
@@ -433,11 +451,22 @@ export function RoadmapGalaxy({
 
       {/* Legend */}
       {!selectedNode && (
-        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex gap-6 text-[9px] uppercase tracking-widest text-muted-foreground font-bold bg-black/60 backdrop-blur-xl px-5 py-2.5 rounded-full border border-white/10">
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" /> Completed</div>
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]" /> In Progress</div>
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" /> Available</div>
-          <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-gray-600" /> Locked</div>
+        <div className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 z-10 flex gap-6 text-[9px] uppercase tracking-widest text-muted-foreground font-bold bg-black/60 backdrop-blur-md px-5 py-2.5 rounded-full border border-white/10">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />{" "}
+            Completed
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-purple-500 shadow-[0_0_8px_rgba(168,85,247,0.8)]" />{" "}
+            In Progress
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-sky-400 shadow-[0_0_8px_rgba(56,189,248,0.8)]" />{" "}
+            Available
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-gray-600" /> Locked
+          </div>
         </div>
       )}
     </div>

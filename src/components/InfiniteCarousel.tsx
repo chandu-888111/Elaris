@@ -15,7 +15,7 @@ const TECHS = [
   { name: "Rust", color: "text-[#dea584]" },
   { name: "Go Lang", color: "text-[#00add8]" },
   { name: "ATS Analyzer", color: "text-[#f59e0b]" },
-  { name: "AI Mentor", color: "text-[#10b981]" }
+  { name: "AI Mentor", color: "text-[#10b981]" },
 ];
 
 export function InfiniteCarousel() {

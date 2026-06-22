@@ -80,20 +80,16 @@ function About() {
         <div className="rounded-2xl border border-border bg-card/60 p-6">
           <h2 className="font-display text-xl">Built with</h2>
           <div className="mt-3 flex flex-wrap gap-1.5 text-xs">
-            {[
-              "TanStack Start",
-              "React 19",
-              "Tailwind CSS v4",
-              "Vercel AI SDK",
-              "Recharts",
-            ].map((t) => (
-              <span
-                key={t}
-                className="rounded-md border border-border bg-background/40 px-2 py-1 font-mono"
-              >
-                {t}
-              </span>
-            ))}
+            {["TanStack Start", "React 19", "Tailwind CSS v4", "Vercel AI SDK", "Recharts"].map(
+              (t) => (
+                <span
+                  key={t}
+                  className="rounded-md border border-border bg-background/40 px-2 py-1 font-mono"
+                >
+                  {t}
+                </span>
+              ),
+            )}
           </div>
         </div>
       </div>

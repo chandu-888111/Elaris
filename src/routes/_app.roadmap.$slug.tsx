@@ -11,7 +11,10 @@ import { toast } from "sonner";
 import { Compass, Loader2, ArrowLeft, GraduationCap, Clock, CheckCircle } from "lucide-react";
 import { type RoadmapNode as RoadmapNodeType, type RoadmapTier } from "@/lib/roadmap-catalog";
 import { lazy, Suspense } from "react";
-const RoadmapGalaxy = lazy(() => import("@/components/RoadmapGalaxy").then(m => ({ default: m.RoadmapGalaxy })));
+import { SkillGraph } from "@/components/SkillGraph";
+const RoadmapGalaxy = lazy(() =>
+  import("@/components/RoadmapGalaxy").then((m) => ({ default: m.RoadmapGalaxy })),
+);
 
 export const Route = createFileRoute("/_app/roadmap/$slug")({
   head: () => ({ meta: [{ title: "Interactive Roadmap — ProjectSpark" }] }),
@@ -39,7 +42,9 @@ function RoadmapSlugPage() {
   const fetchProgress = useServerFn(getDomainProgress);
   const updateProgress = useServerFn(toggleNodeProgress);
 
-  const [activeTier, setActiveTier] = useState<"beginner" | "intermediate" | "advanced">("beginner");
+  const [activeTier, setActiveTier] = useState<"beginner" | "intermediate" | "advanced">(
+    "beginner",
+  );
   const [loading, setLoading] = useState(true);
   const [roadmapData, setRoadmapData] = useState<RoadmapTier | null>(null);
   const [dbProgress, setDbProgress] = useState<DbProgressRow[]>([]);
@@ -53,7 +58,7 @@ function RoadmapSlugPage() {
           fetchRoadmap({ data: { slug, tier: t } }),
           fetchProgress({ data: { slug } }),
         ]);
-        
+
         const content = roadmapRes?.content ? { ...roadmapRes.content } : null;
         if (content && content.nodes) {
           content.nodes = content.nodes.map((n) => enrichRoadmapNode(n, slug));
@@ -87,7 +92,11 @@ function RoadmapSlugPage() {
     const statusMap: Record<string, "locked" | "available" | "in_progress" | "completed"> = {};
     if (!roadmapData?.nodes) return statusMap;
 
-    const normalizeId = (id: string) => id.toLowerCase().replace(/&/g, "and").replace(/[^a-z0-9]/g, "");
+    const normalizeId = (id: string) =>
+      id
+        .toLowerCase()
+        .replace(/&/g, "and")
+        .replace(/[^a-z0-9]/g, "");
 
     const completedSet = new Set<string>();
     const inProgressSet = new Set<string>();
@@ -117,7 +126,9 @@ function RoadmapSlugPage() {
   }, [roadmapData, dbProgress]);
 
   const totalHours = useMemo(() => {
-    return roadmapData?.nodes?.reduce((acc: number, n: RoadmapNodeType) => acc + (n.hours || 0), 0) || 0;
+    return (
+      roadmapData?.nodes?.reduce((acc: number, n: RoadmapNodeType) => acc + (n.hours || 0), 0) || 0
+    );
   }, [roadmapData]);
 
   const completedStats = useMemo(() => {
@@ -157,8 +168,19 @@ function RoadmapSlugPage() {
     }
   };
 
-  const completedIds = useMemo(() => new Set(dbProgress.filter(p => p.status === "done" || p.status === "completed").map(p => p.node_id)), [dbProgress]);
-  const inProgressIds = useMemo(() => new Set(dbProgress.filter(p => p.status === "in_progress").map(p => p.node_id)), [dbProgress]);
+  const completedIds = useMemo(
+    () =>
+      new Set(
+        dbProgress
+          .filter((p) => p.status === "done" || p.status === "completed")
+          .map((p) => p.node_id),
+      ),
+    [dbProgress],
+  );
+  const inProgressIds = useMemo(
+    () => new Set(dbProgress.filter((p) => p.status === "in_progress").map((p) => p.node_id)),
+    [dbProgress],
+  );
 
   return (
     <PageShell>
@@ -183,28 +205,28 @@ function RoadmapSlugPage() {
           {loading ? (
             <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50">
               <Loader2 className="h-8 w-8 animate-spin text-spark" />
-              <p className="mt-3 text-sm text-muted-foreground">
-                Initializing learning galaxy...
-              </p>
+              <p className="mt-3 text-sm text-muted-foreground">Initializing learning galaxy...</p>
             </div>
           ) : !roadmapData ? (
-             <div className="absolute inset-0 z-10 flex items-center justify-center text-muted-foreground bg-background/50">
+            <div className="absolute inset-0 z-10 flex items-center justify-center text-muted-foreground bg-background/50">
               No roadmap available.
             </div>
           ) : (
-            <Suspense fallback={
-              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50">
-                <Loader2 className="h-8 w-8 animate-spin text-spark" />
-                <p className="mt-3 text-sm text-muted-foreground">Loading 3D Galaxy...</p>
-              </div>
-            }>
+            <Suspense
+              fallback={
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-background/50">
+                  <Loader2 className="h-8 w-8 animate-spin text-spark" />
+                  <p className="mt-3 text-sm text-muted-foreground">Loading 3D Galaxy...</p>
+                </div>
+              }
+            >
               <RoadmapGalaxy
                 nodes={roadmapData?.nodes || []}
                 completedIds={completedIds}
                 inProgressIds={inProgressIds}
                 selectedNode={selectedNode}
                 onSelectNode={(n) => setSelectedNode(n)}
-                nodeStatus={selectedNode ? (nodeStatusMap[selectedNode.id] || "locked") : "locked"}
+                nodeStatus={selectedNode ? nodeStatusMap[selectedNode.id] || "locked" : "locked"}
                 onStatusChange={handleStatusChange}
               />
             </Suspense>
@@ -213,7 +235,7 @@ function RoadmapSlugPage() {
 
         {/* Sidebar Info & Tier Switcher */}
         <div className="space-y-6">
-          <div className="rounded-3xl border border-white/10 bg-black/40 p-4 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-black/40 p-4 backdrop-blur-md">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
               Galaxy Sectors (Tiers)
             </h3>
@@ -231,7 +253,8 @@ function RoadmapSlugPage() {
                   <span>{tierKey}</span>
                   {activeTier !== tierKey && (
                     <span className="text-[9px] text-white/30 font-mono">
-                      {dbProgress.filter((p) => p.tier === tierKey && p.status === "done").length} DONE
+                      {dbProgress.filter((p) => p.tier === tierKey && p.status === "done").length}{" "}
+                      DONE
                     </span>
                   )}
                 </button>
@@ -239,7 +262,7 @@ function RoadmapSlugPage() {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-black/40 p-5 backdrop-blur-xl">
+          <div className="rounded-3xl border border-white/10 bg-black/40 p-5 backdrop-blur-md">
             <h3 className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground mb-4">
               Sector Progress
             </h3>
@@ -247,10 +270,21 @@ function RoadmapSlugPage() {
             <div className="flex items-center gap-5">
               <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
                 <svg className="h-full w-full -rotate-90">
-                  <circle cx="32" cy="32" r="26" className="stroke-white/5" strokeWidth="4" fill="transparent" />
                   <circle
-                    cx="32" cy="32" r="26"
-                    className="stroke-spark" strokeWidth="4" fill="transparent"
+                    cx="32"
+                    cy="32"
+                    r="26"
+                    className="stroke-white/5"
+                    strokeWidth="4"
+                    fill="transparent"
+                  />
+                  <circle
+                    cx="32"
+                    cy="32"
+                    r="26"
+                    className="stroke-spark"
+                    strokeWidth="4"
+                    fill="transparent"
                     strokeDasharray={2 * Math.PI * 26}
                     strokeDashoffset={2 * Math.PI * 26 * (1 - completedStats.percent / 100)}
                     strokeLinecap="round"
@@ -274,23 +308,32 @@ function RoadmapSlugPage() {
 
             <div className="mt-6 grid grid-cols-2 gap-4 border-t border-white/5 pt-5 text-xs">
               <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-white/50">Est. Time</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-white/50">
+                  Est. Time
+                </span>
                 <span className="mt-1 inline-flex items-center gap-1.5 font-bold text-white font-mono">
                   <Clock className="h-3.5 w-3.5 text-aurora" /> {totalHours}h
                 </span>
               </div>
               <div className="flex flex-col">
-                <span className="text-[9px] font-bold uppercase tracking-widest text-white/50">XP Earned</span>
+                <span className="text-[9px] font-bold uppercase tracking-widest text-white/50">
+                  XP Earned
+                </span>
                 <span className="mt-1 inline-flex items-center gap-1.5 font-bold text-white font-mono">
                   <CheckCircle className="h-3.5 w-3.5 text-emerald-400" />
-                  {dbProgress.filter((p) => p.tier === activeTier && p.status === "done").reduce((acc, p) => acc + (p.xp_earned || 0), 0)} XP
+                  {dbProgress
+                    .filter((p) => p.tier === activeTier && p.status === "done")
+                    .reduce((acc, p) => acc + (p.xp_earned || 0), 0)}{" "}
+                  XP
                 </span>
               </div>
             </div>
           </div>
+
+          <SkillGraph />
         </div>
       </div>
-      
+
       {/* Node drawer (Side panel of features) */}
       {selectedNode && domain && roadmapData && (
         <NodeDrawer

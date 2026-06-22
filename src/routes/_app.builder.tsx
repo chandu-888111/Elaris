@@ -1,7 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { useServerFn } from "@tanstack/react-start";
-import { generateBuildBlueprint, generateProjectPrototypeCode, updateProjectPrototypeCode } from "@/lib/ai.functions";
+import {
+  generateBuildBlueprint,
+  generateProjectPrototypeCode,
+  updateProjectPrototypeCode,
+} from "@/lib/ai.functions";
 import type { BuildBlueprint, ProjectIdea } from "@/lib/schemas";
 import { PageShell, PageHeader } from "@/components/PageHeader";
 import {
@@ -22,7 +26,7 @@ import {
   Sparkles,
   Cpu,
   Monitor,
-  X
+  X,
 } from "lucide-react";
 import { SaveBar } from "@/components/SaveBar";
 import { supabase } from "@/integrations/supabase/client";
@@ -31,13 +35,18 @@ import { awardXP, XP, unlockAchievement } from "@/lib/gamification";
 import { toast } from "sonner";
 import { z } from "zod";
 
+type ExtendedBuildBlueprint = BuildBlueprint & {
+  sandboxCode?: string | null;
+  category?: string;
+};
+
 type BlueprintRow = {
   id: string;
   created_at: string;
   title: string;
   description: string | null;
   technologies: string[];
-  blueprint: BuildBlueprint;
+  blueprint: ExtendedBuildBlueprint;
 };
 
 const builderSearchSchema = z.object({
@@ -63,10 +72,10 @@ function BuilderPage() {
   const [tech, setTech] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [bp, setBp] = useState<BuildBlueprint | null>(null);
-  const [tab, setTab] = useState<"prototype" | "overview" | "structure" | "schema" | "api" | "code" | "deploy">(
-    "overview",
-  );
+  const [bp, setBp] = useState<ExtendedBuildBlueprint | null>(null);
+  const [tab, setTab] = useState<
+    "prototype" | "overview" | "structure" | "schema" | "api" | "code" | "deploy"
+  >("overview");
 
   const [prototypeHtml, setPrototypeHtml] = useState<string | null>(null);
   const [updatingPrototype, setUpdatingPrototype] = useState(false);
@@ -110,8 +119,8 @@ function BuilderPage() {
         if (data) {
           setTitle(data.title);
           setDescription(data.description ?? "");
-          setTech((data.technologies as string[] ?? []).join(", "));
-          const blueprintData = data.blueprint as any;
+          setTech(((data.technologies as string[]) ?? []).join(", "));
+          const blueprintData = data.blueprint as unknown as ExtendedBuildBlueprint;
           setBp(blueprintData);
           if (blueprintData && blueprintData.sandboxCode) {
             setPrototypeHtml(blueprintData.sandboxCode);
@@ -140,7 +149,7 @@ function BuilderPage() {
 
       const [blueprintResult, prototypeResult] = await Promise.all([
         generate({ data: { title, description, technologies } }),
-        generatePrototype({ data: { title, description, technologies } })
+        generatePrototype({ data: { title, description, technologies } }),
       ]);
 
       setBp(blueprintResult);
@@ -178,7 +187,7 @@ function BuilderPage() {
       blueprint: {
         ...bp,
         category: "project",
-        sandboxCode: prototypeHtml
+        sandboxCode: prototypeHtml,
       } as unknown as never,
     });
     if (error) {
@@ -217,7 +226,7 @@ function BuilderPage() {
               setTitle(r.title);
               setDescription(r.description ?? "");
               setTech((r.technologies ?? []).join(", "));
-              const blueprintData = r.blueprint as any;
+              const blueprintData = r.blueprint as unknown as ExtendedBuildBlueprint;
               setBp(blueprintData);
               if (blueprintData && blueprintData.sandboxCode) {
                 setPrototypeHtml(blueprintData.sandboxCode);
@@ -339,14 +348,18 @@ function BuilderPage() {
               {tab === "prototype" && prototypeHtml && (
                 <div className="grid gap-4 lg:grid-cols-[280px_1fr] h-[550px] min-h-[500px]">
                   {/* Left Chat Sidebar */}
-                  <div className="flex flex-col justify-between rounded-2xl border border-border bg-card/40 p-4 h-full overflow-y-auto" data-lenis-prevent="true">
+                  <div
+                    className="flex flex-col justify-between rounded-2xl border border-border bg-card/40 p-4 h-full overflow-y-auto"
+                    data-lenis-prevent="true"
+                  >
                     <div className="space-y-3">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-foreground">
                         <Sparkles className="h-4 w-4 text-spark animate-pulse" />
                         <span>Prompt AI Sandbox</span>
                       </div>
                       <p className="text-[10px] text-muted-foreground leading-normal">
-                        Iterate on your project prototype just like in Bolt, or v0! Ask the AI to change styles, add features, or refine behaviors.
+                        Iterate on your project prototype just like in Bolt, or v0! Ask the AI to
+                        change styles, add features, or refine behaviors.
                       </p>
                       <textarea
                         value={prototypePrompt}
@@ -356,7 +369,7 @@ function BuilderPage() {
                         className="w-full rounded-lg border border-white/10 bg-background px-2.5 py-1.5 text-xs text-foreground outline-none focus:border-spark resize-none"
                       />
                     </div>
-                    
+
                     <button
                       onClick={async () => {
                         if (!prototypePrompt.trim() || !prototypeHtml) return;
@@ -367,7 +380,7 @@ function BuilderPage() {
                             data: {
                               currentHtml: prototypeHtml,
                               prompt: prototypePrompt,
-                            }
+                            },
                           });
                           setPrototypeHtml(res.html);
                           setPrototypePrompt("");
@@ -424,7 +437,7 @@ function BuilderPage() {
                         </button>
                       </div>
                     </div>
-                    
+
                     <iframe
                       title="AI App Sandbox Preview"
                       srcDoc={prototypeHtml}
@@ -579,7 +592,7 @@ function BuilderPage() {
             <p className="text-xs text-muted-foreground mb-4">
               Here is the HTML/CSS/JS source code generated for your sandbox web prototype.
             </p>
-            
+
             <textarea
               readOnly
               value={prototypeHtml}
@@ -608,7 +621,6 @@ function BuilderPage() {
           </div>
         </div>
       )}
-
     </PageShell>
   );
 }

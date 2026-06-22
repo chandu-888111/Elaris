@@ -77,7 +77,7 @@ function AppLayout() {
   const navigate = useNavigate();
   const path = useRouterState({ select: (s) => s.location.pathname });
   const isChat = path.startsWith("/chat");
-  const { setScene } = useSceneStore();
+  const setScene = useSceneStore((s) => s.setScene);
   useLenis();
 
   useEffect(() => {
@@ -128,7 +128,11 @@ function AppLayout() {
         <div className="flex flex-col h-full">
           <Logo className="shrink-0" />
 
-          <div className="flex-1 min-h-0 overflow-y-auto mt-8 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }} data-lenis-prevent>
+          <div
+            className="flex-1 min-h-0 overflow-y-auto mt-8 [&::-webkit-scrollbar]:hidden"
+            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+            data-lenis-prevent
+          >
             <nav className="space-y-0.5 pr-1 pb-4">
               {NAV.map((n) => {
                 const active = path === n.to || path.startsWith(n.to + "/");
@@ -155,7 +159,9 @@ function AppLayout() {
               </div>
               <div className="min-w-0 flex-1">
                 <div className="truncate text-sm font-medium text-foreground">{user.email}</div>
-                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">Signed in</div>
+                <div className="text-[10px] uppercase tracking-widest text-muted-foreground">
+                  Signed in
+                </div>
               </div>
               <button
                 onClick={async () => {
@@ -174,10 +180,12 @@ function AppLayout() {
 
       {/* Main Content Area */}
       <main className="relative flex flex-col flex-1 min-w-0 overflow-hidden h-full">
-
         {/* Mobile Header */}
         <div className="lg:hidden shrink-0 sticky top-0 z-10 flex items-center justify-between glass px-4 py-3 border-b border-white/5">
-          <button onClick={() => setMenuOpen(!menuOpen)} className="p-2 -ml-2 rounded-lg hover:bg-white/10 transition">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="p-2 -ml-2 rounded-lg hover:bg-white/10 transition"
+          >
             <Menu className="h-6 w-6 text-foreground" />
           </button>
           <div onClick={() => setMenuOpen(!menuOpen)} className="cursor-pointer flex items-center">
@@ -193,7 +201,11 @@ function AppLayout() {
           <div className="fixed inset-0 z-50 flex bg-black/60 backdrop-blur-sm">
             <div className="h-full w-64 flex flex-col glass-panel bg-background/95 p-4 shadow-2xl">
               <Logo className="shrink-0" />
-              <div className="flex-1 min-h-0 overflow-y-auto mt-8 [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }} data-lenis-prevent>
+              <div
+                className="flex-1 min-h-0 overflow-y-auto mt-8 [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                data-lenis-prevent
+              >
                 <nav className="space-y-0.5 pr-1 pb-4">
                   {NAV.map((n) => {
                     const active = path === n.to || path.startsWith(n.to + "/");
@@ -237,7 +249,11 @@ function AppLayout() {
         )}
 
         {/* Scrollable Content Routing */}
-        <div className="flex-1 min-h-0 overflow-y-auto w-full [&::-webkit-scrollbar]:hidden" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }} data-lenis-prevent>
+        <div
+          className="flex-1 min-h-0 overflow-y-auto w-full [&::-webkit-scrollbar]:hidden"
+          style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+          data-lenis-prevent
+        >
           {isChat ? (
             <Outlet />
           ) : (

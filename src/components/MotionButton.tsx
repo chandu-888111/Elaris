@@ -15,7 +15,10 @@ type ConflictingButtonKeys =
   | "onAnimationCancel"
   | "onAnimationEnd";
 
-export type MotionButtonProps = Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, ConflictingButtonKeys> &
+export type MotionButtonProps = Omit<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  ConflictingButtonKeys
+> &
   Omit<MotionProps, OverlapKeys | "children">;
 
 /**

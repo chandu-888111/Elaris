@@ -35,7 +35,11 @@ const buttonVariants = cva(
 );
 
 export interface ButtonProps
-  extends Omit<React.ButtonHTMLAttributes<HTMLButtonElement>, "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag">,
+  extends
+    Omit<
+      React.ButtonHTMLAttributes<HTMLButtonElement>,
+      "onAnimationStart" | "onDragStart" | "onDragEnd" | "onDrag"
+    >,
     VariantProps<typeof buttonVariants> {
   asChild?: boolean;
 }
@@ -49,11 +53,15 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ref={ref}
           onMouseEnter={(e) => {
             playHover();
-            if (onMouseEnter) onMouseEnter(e as any);
+            if (onMouseEnter) {
+              onMouseEnter(e as unknown as React.MouseEvent<HTMLButtonElement, MouseEvent>);
+            }
           }}
           onClick={(e) => {
             playClick();
-            if (onClick) onClick(e as any);
+            if (onClick) {
+              onClick(e as unknown as React.MouseEvent<HTMLButtonElement, MouseEvent>);
+            }
           }}
           {...props}
         />
@@ -72,7 +80,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           if (onClick) onClick(e);
         }}
         className={cn(buttonVariants({ variant, size, className }))}
-        ref={ref as any}
+        ref={ref as React.Ref<HTMLButtonElement>}
         {...props}
       />
     );
@@ -80,4 +88,5 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
 );
 Button.displayName = "Button";
 
+// eslint-disable-next-line react-refresh/only-export-components
 export { Button, buttonVariants };

@@ -3,7 +3,11 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import { Markdown } from "@/components/Markdown";
 import * as Icons from "lucide-react";
-import { generateNodeStudyGuide, toggleNodeProgress, generateNodeResourcesAndMindmap } from "@/lib/roadmap.functions";
+import {
+  generateNodeStudyGuide,
+  toggleNodeProgress,
+  generateNodeResourcesAndMindmap,
+} from "@/lib/roadmap.functions";
 import { useServerFn } from "@tanstack/react-start";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { awardXP, XP, unlockAchievement } from "@/lib/gamification";
@@ -11,11 +15,25 @@ import { toast } from "sonner";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { playHover, playClick, playSuccess } from "@/lib/sounds";
-import { generateMindmapData, getFallbackInterviewQuestions, matchKey, getFallbackMindmapAndResources } from "@/lib/resource-engine";
+import {
+  generateMindmapData,
+  getFallbackInterviewQuestions,
+  matchKey,
+  getFallbackMindmapAndResources,
+} from "@/lib/resource-engine";
 import { getBYOXLinkForTask } from "@/lib/byox-link";
 
 type RoadmapResource = {
-  type: "doc" | "youtube" | "github" | "blog" | "practice";
+  type:
+    | "doc"
+    | "youtube"
+    | "github"
+    | "article"
+    | "course"
+    | "book"
+    | "cheatsheet"
+    | "practice"
+    | "blog";
   title: string;
   url: string;
   channel?: string;
@@ -25,6 +43,8 @@ type RoadmapResource = {
   difficulty?: string;
   thumbnail?: string;
   rating?: number;
+  qualityScore?: number;
+  tier?: number;
   free?: boolean;
 };
 
@@ -59,6 +79,59 @@ type NodeDrawerProps = {
   onStatusChange: (newStatus: "in_progress" | "done") => Promise<void>;
 };
 
+interface MindmapNode {
+  id: string;
+  type?: string;
+  label: string;
+  x: number;
+  y: number;
+  color?: string;
+  source?: string;
+  info?: string;
+}
+
+interface MindmapEdge {
+  id: string;
+  source: string;
+  target: string;
+  animated?: boolean;
+}
+
+interface FreeBook {
+  id: string;
+  title: string;
+  url: string;
+  author: string;
+  category: string;
+  format: string;
+}
+
+interface FPBEntry {
+  title: string;
+  url: string;
+  author?: string;
+  notes?: string[];
+}
+
+interface FPBSection {
+  section: string;
+  entries?: FPBEntry[];
+  subsections?: FPBSection[];
+}
+
+interface FPBLanguageBlock {
+  language?: {
+    code: string;
+  };
+  sections: FPBSection[];
+}
+
+interface FPBResponse {
+  children?: Array<{
+    children?: FPBLanguageBlock[];
+  }>;
+}
+
 export function NodeDrawer({
   open,
   onClose,
@@ -80,21 +153,21 @@ export function NodeDrawer({
   const getMatchedBYOX = () => {
     let match = getBYOXLinkForTask(node.title);
     if (match) return match;
-    
+
     if (node.tools) {
       for (const tool of node.tools) {
         match = getBYOXLinkForTask(tool);
         if (match) return match;
       }
     }
-    
+
     if (node.skills) {
       for (const skill of node.skills) {
         match = getBYOXLinkForTask(skill);
         if (match) return match;
       }
     }
-    
+
     return null;
   };
 
@@ -105,7 +178,7 @@ export function NodeDrawer({
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isPanning, setIsPanning] = useState(false);
   const [startPan, setStartPan] = useState({ x: 0, y: 0 });
-  const [hoveredNode, setHoveredNode] = useState<any | null>(null);
+  const [hoveredNode, setHoveredNode] = useState<MindmapNode | null>(null);
 
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -130,19 +203,20 @@ export function NodeDrawer({
   }, [activeTab]);
 
   // Dynamic resources & mindmap states
-  const [dynamicData, setDynamicData] = useState<{
-    resources: RoadmapResource[];
-    mindmap: { nodes: any[]; edges: any[] };
-  } | null>(null);
+  const [dynamicData, setDynamicData] = useState<Awaited<
+    ReturnType<typeof fetchResourcesAndMindmap>
+  > | null>(null);
   const [dynamicLoading, setDynamicLoading] = useState(false);
 
   useEffect(() => {
     if (!open || !node.id) return;
     setDynamicData(null);
     setDynamicLoading(true);
-    fetchResourcesAndMindmap({ data: { slug: domainSlug, tier, nodeId: node.id, nodeTitle: node.title } })
+    fetchResourcesAndMindmap({
+      data: { slug: domainSlug, tier, nodeId: node.id, nodeTitle: node.title },
+    })
       .then((res) => {
-        setDynamicData(res as any);
+        setDynamicData(res);
       })
       .catch((err) => {
         console.error("Failed to load AI resources and mindmap:", err);
@@ -150,52 +224,62 @@ export function NodeDrawer({
       .finally(() => {
         setDynamicLoading(false);
       });
-  }, [open, node.id, domainSlug, tier, node.title]);
+  }, [open, node.id, domainSlug, tier, node.title, fetchResourcesAndMindmap]);
 
   // Recommended Free Reference Books states
-  const [recommendedBooks, setRecommendedBooks] = useState<any[]>([]);
+  const [recommendedBooks, setRecommendedBooks] = useState<FreeBook[]>([]);
   const [booksLoading, setBooksLoading] = useState(false);
 
   useEffect(() => {
     if (!open || !node.id || activeTab !== "resources") return;
-    
+
     let active = true;
     const fetchAndFilterBooks = async () => {
       setBooksLoading(true);
       try {
-        let books: any[] = (window as any).__fpb_cache || [];
+        const books: FreeBook[] =
+          (window as typeof window & { __fpb_cache?: FreeBook[] }).__fpb_cache || [];
         if (books.length === 0) {
-          const res = await fetch("https://raw.githubusercontent.com/EbookFoundation/free-programming-books-search/master/fpb.json");
-          const data = await res.json();
-          if (data && Array.isArray(data.children) && data.children[0] && Array.isArray(data.children[0].children)) {
-            const enBlocks = data.children[0].children.filter((l: any) => l.language && l.language.code === "en");
-            enBlocks.forEach((enLang: any) => {
-              enLang.sections.forEach((s: any) => {
+          const res = await fetch(
+            "https://raw.githubusercontent.com/EbookFoundation/free-programming-books-search/master/fpb.json",
+          );
+          const data = (await res.json()) as FPBResponse;
+          if (
+            data &&
+            Array.isArray(data.children) &&
+            data.children[0] &&
+            Array.isArray(data.children[0].children)
+          ) {
+            const enBlocks = data.children[0].children.filter(
+              (l) => l.language && l.language.code === "en",
+            );
+            enBlocks.forEach((enLang) => {
+              enLang.sections.forEach((s) => {
                 const secName = s.section;
                 if (Array.isArray(s.entries)) {
-                  s.entries.forEach((e: any) => {
+                  s.entries.forEach((e) => {
                     books.push({
                       id: `live-${books.length}`,
                       title: e.title,
                       url: e.url,
                       author: e.author || "Unknown",
                       category: secName,
-                      format: e.notes ? e.notes.join(", ") : "HTML"
+                      format: e.notes ? e.notes.join(", ") : "HTML",
                     });
                   });
                 }
                 if (Array.isArray(s.subsections)) {
-                  s.subsections.forEach((sub: any) => {
+                  s.subsections.forEach((sub) => {
                     const subName = sub.section;
                     if (Array.isArray(sub.entries)) {
-                      sub.entries.forEach((e: any) => {
+                      sub.entries.forEach((e) => {
                         books.push({
                           id: `live-${books.length}`,
                           title: e.title,
                           url: e.url,
                           author: e.author || "Unknown",
                           category: `${secName} - ${subName}`,
-                          format: e.notes ? e.notes.join(", ") : "HTML"
+                          format: e.notes ? e.notes.join(", ") : "HTML",
                         });
                       });
                     }
@@ -203,25 +287,29 @@ export function NodeDrawer({
                 }
               });
             });
-            (window as any).__fpb_cache = books;
+            (window as typeof window & { __fpb_cache?: FreeBook[] }).__fpb_cache = books;
           }
         }
-        
+
         if (!active) return;
 
         const key = matchKey(node.title) || matchKey(domainSlug) || node.id;
         const normalizedNodeTitle = node.title.toLowerCase();
-        
-        const matched = books.filter(b => {
+
+        const matched = books.filter((b) => {
           const title = b.title.toLowerCase();
           const category = b.category.toLowerCase();
-          
-          const directMatch = title.includes(normalizedNodeTitle) || category.includes(normalizedNodeTitle);
-          const keyMatch = key ? (new RegExp(`\\b${key.toLowerCase()}\\b`).test(title) || new RegExp(`\\b${key.toLowerCase()}\\b`).test(category)) : false;
-          
+
+          const directMatch =
+            title.includes(normalizedNodeTitle) || category.includes(normalizedNodeTitle);
+          const keyMatch = key
+            ? new RegExp(`\\b${key.toLowerCase()}\\b`).test(title) ||
+              new RegExp(`\\b${key.toLowerCase()}\\b`).test(category)
+            : false;
+
           return directMatch || keyMatch;
         });
-        
+
         setRecommendedBooks(matched.slice(0, 4));
       } catch (err) {
         console.warn("Failed to load/match recommended books:", err);
@@ -231,7 +319,7 @@ export function NodeDrawer({
         }
       }
     };
-    
+
     fetchAndFilterBooks();
     return () => {
       active = false;
@@ -300,8 +388,18 @@ export function NodeDrawer({
     onFinish: async ({ message }) => {
       const activeId = threadIdRef.current;
       if (!user || !activeId || !message) return;
-      const msgAny = message as any;
-      const text = msgAny.content || (Array.isArray(msgAny.parts) ? msgAny.parts.filter((p: any) => p?.type === "text").map((p: any) => p.text).join("\n\n") : "");
+      const msgAny = message as UIMessage & {
+        content?: string;
+        parts?: Array<{ type: string; text?: string }>;
+      };
+      const text =
+        msgAny.content ||
+        (Array.isArray(msgAny.parts)
+          ? msgAny.parts
+              .filter((p) => p?.type === "text")
+              .map((p) => p.text || "")
+              .join("\n\n")
+          : "");
       const parts = [{ type: "text", text }];
       await supabase.from("chat_messages").insert({
         id: crypto.randomUUID(),
@@ -314,7 +412,7 @@ export function NodeDrawer({
         .from("chat_threads")
         .update({ updated_at: new Date().toISOString() })
         .eq("id", activeId);
-    }
+    },
   });
 
   const isStreaming = status === "submitted" || status === "streaming";
@@ -340,7 +438,10 @@ export function NodeDrawer({
         parts: [
           {
             type: "text",
-            text: `You are the AI Mentor for the topic "${node.title}" in the domain "${domainName}". Scopes your responses strictly to this topic. Help the user learn, understand core concepts, prepare for interviews, or write code. Use markdown and code blocks when helpful.`,
+            text: `You are the AI Mentor for the topic "${node.title}" in the domain "${domainName}". Scopes your responses strictly to this topic. Help the user learn, understand core concepts, prepare for interviews, or write code. Use markdown and code blocks when helpful.
+            
+User Memory / Analytics Data: 
+${localStorage.getItem("ecosystem-storage") || "No historical memory found."}`,
           },
         ],
       };
@@ -355,10 +456,10 @@ export function NodeDrawer({
 
         if (cancelled) return;
 
-        const loadedMsgs: UIMessage[] = ((msgData ?? []) as any[]).map((m) => ({
+        const loadedMsgs: UIMessage[] = (msgData ?? []).map((m) => ({
           id: m.id,
           role: m.role as UIMessage["role"],
-          parts: (Array.isArray(m.parts) ? m.parts : []) as UIMessage["parts"],
+          parts: (Array.isArray(m.parts) ? m.parts : []) as unknown as UIMessage["parts"],
         }));
         setMessages([systemMessage, ...loadedMsgs]);
       } else {
@@ -370,7 +471,7 @@ export function NodeDrawer({
     return () => {
       cancelled = true;
     };
-  }, [open, user, node.id, domainSlug, domainName]);
+  }, [open, user, node.id, domainSlug, domainName, node.title, setMessages]);
 
   const submitMessage = async (text: string) => {
     if (!user) return;
@@ -383,7 +484,7 @@ export function NodeDrawer({
         .insert({ user_id: user.id, title })
         .select("id")
         .single();
-      
+
       if (error || !data) {
         toast.error("Failed to start chat session");
         return;
@@ -412,12 +513,14 @@ export function NodeDrawer({
     await submitMessage(text);
   };
 
-  const getMessageText = (m: any) => {
+  const getMessageText = (
+    m: UIMessage & { content?: string; parts?: Array<{ type: string; text?: string }> },
+  ) => {
     if (m.content) return m.content;
     if (Array.isArray(m.parts)) {
       return m.parts
-        .filter((p: any) => p && p.type === "text")
-        .map((p: any) => p.text)
+        .filter((p) => p && p.type === "text")
+        .map((p) => p.text || "")
         .join("\n\n");
     }
     return "";
@@ -456,7 +559,7 @@ export function NodeDrawer({
   const [notesContent, setNotesContent] = useState("");
   const [notesSaved, setNotesSaved] = useState(true);
   const [notesMode, setNotesMode] = useState<"edit" | "preview">("edit");
-  const saveTimeoutRef = useRef<any>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load notes on node changes
   useEffect(() => {
@@ -528,7 +631,7 @@ export function NodeDrawer({
     if (!studyGuide?.quiz) return;
     setQuizSubmitted(true);
     let correct = 0;
-    studyGuide.quiz.forEach((qItem: any, idx: number) => {
+    studyGuide.quiz.forEach((qItem: { answer: number }, idx: number) => {
       if (quizAnswers[idx] === qItem.answer) correct++;
     });
 
@@ -562,7 +665,7 @@ export function NodeDrawer({
       />
 
       {/* Drawer Container */}
-      <div className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[540px] flex-col border-l border-white/10 bg-card/95 shadow-glow backdrop-blur-2xl transition-transform duration-300 sm:max-w-[620px]">
+      <div className="fixed inset-y-0 right-0 z-50 flex h-full w-full max-w-[540px] flex-col border-l border-white/10 bg-card/95 shadow-glow backdrop-blur-md transition-transform duration-300 sm:max-w-[620px]">
         {/* Header */}
         <div className="flex items-center justify-between border-b border-white/5 px-6 py-4">
           <div>
@@ -606,8 +709,22 @@ export function NodeDrawer({
         </div>
 
         {/* Navigation Tabs */}
-        <div className="flex border-b border-white/5 px-4 text-xs font-medium overflow-x-auto scrollbar-none flex-nowrap" data-lenis-prevent>
-          {(["learn", "resources", "build", "guide", "mindmap", "notes", "projects", "mentor"] as const).map((tab) => (
+        <div
+          className="flex border-b border-white/5 px-4 text-xs font-medium overflow-x-auto scrollbar-none flex-nowrap"
+          data-lenis-prevent
+        >
+          {(
+            [
+              "learn",
+              "resources",
+              "build",
+              "guide",
+              "mindmap",
+              "notes",
+              "projects",
+              "mentor",
+            ] as const
+          ).map((tab) => (
             <button
               key={tab}
               onMouseEnter={playHover}
@@ -630,8 +747,8 @@ export function NodeDrawer({
                     : tab === "notes"
                       ? "Personal Notes"
                       : tab === "build"
-                          ? "Build (BYOX)"
-                          : tab}
+                        ? "Build (BYOX)"
+                        : tab}
               {activeTab === tab && (
                 <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-spark" />
               )}
@@ -647,21 +764,38 @@ export function NodeDrawer({
               {/* Micro stats banner */}
               <div className="grid grid-cols-2 gap-4 rounded-2xl border border-white/5 bg-white/5 p-4 text-xs">
                 <div className="flex flex-col">
-                  <span className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">Est. Learning Time</span>
-                  <span className="mt-1 font-semibold text-foreground text-sm flex items-center gap-1.5"><Icons.Clock className="h-4 w-4 text-spark" /> {node.hours} Hours</span>
+                  <span className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">
+                    Est. Learning Time
+                  </span>
+                  <span className="mt-1 font-semibold text-foreground text-sm flex items-center gap-1.5">
+                    <Icons.Clock className="h-4 w-4 text-spark" /> {node.hours} Hours
+                  </span>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">Difficulty</span>
-                  <span className={`mt-1 font-semibold text-sm capitalize ${node.difficulty === "easy" ? "text-emerald-400" : node.difficulty === "medium" ? "text-blue-400" : "text-red-400"}`}>{node.difficulty}</span>
+                  <span className="text-muted-foreground uppercase tracking-widest text-[9px] font-semibold">
+                    Difficulty
+                  </span>
+                  <span
+                    className={`mt-1 font-semibold text-sm capitalize ${node.difficulty === "easy" ? "text-emerald-400" : node.difficulty === "medium" ? "text-blue-400" : "text-red-400"}`}
+                  >
+                    {node.difficulty}
+                  </span>
                 </div>
               </div>
 
               {node.prerequisites && node.prerequisites.length > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5"><Icons.ShieldAlert className="h-4 w-4 text-spark" /> Prerequisites</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-2 flex items-center gap-1.5">
+                    <Icons.ShieldAlert className="h-4 w-4 text-spark" /> Prerequisites
+                  </h4>
                   <div className="flex flex-wrap gap-1.5">
                     {node.prerequisites.map((p) => (
-                      <span key={p} className="rounded-lg bg-red-500/10 border border-red-500/20 px-2.5 py-1 text-xs text-red-400 font-semibold">{p}</span>
+                      <span
+                        key={p}
+                        className="rounded-lg bg-red-500/10 border border-red-500/20 px-2.5 py-1 text-xs text-red-400 font-semibold"
+                      >
+                        {p}
+                      </span>
                     ))}
                   </div>
                 </div>
@@ -693,7 +827,9 @@ export function NodeDrawer({
 
               {(node.skills?.length ?? 0) > 0 && (
                 <div>
-                  <h4 className="text-sm font-semibold text-foreground mb-3">Tasks to Complete (Progress Tracker)</h4>
+                  <h4 className="text-sm font-semibold text-foreground mb-3">
+                    Tasks to Complete (Progress Tracker)
+                  </h4>
                   <div className="space-y-2">
                     {node.skills?.map((skill) => {
                       const isSkillDone = !!completedSkills[skill];
@@ -709,11 +845,13 @@ export function NodeDrawer({
                           }`}
                         >
                           <div className="flex items-center gap-3 min-w-0 flex-1">
-                            <div className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
-                              isSkillDone
-                                ? "border-emerald-500 bg-emerald-500 text-primary-foreground"
-                                : "border-white/20 bg-transparent"
-                            }`}>
+                            <div
+                              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition ${
+                                isSkillDone
+                                  ? "border-emerald-500 bg-emerald-500 text-primary-foreground"
+                                  : "border-white/20 bg-transparent"
+                              }`}
+                            >
                               {isSkillDone && <Icons.Check className="h-3.5 w-3.5 stroke-[3px]" />}
                             </div>
                             <span className="text-xs font-medium truncate">{skill}</span>
@@ -760,7 +898,9 @@ export function NodeDrawer({
               {dynamicLoading && (
                 <div className="flex flex-col items-center justify-center py-6 border border-dashed border-white/5 rounded-2xl bg-white/2">
                   <Icons.Loader2 className="h-6 w-6 animate-spin text-spark" />
-                  <p className="mt-2 text-xs text-muted-foreground font-sans">Querying AI for specialized docs, video tutorials, and exercises...</p>
+                  <p className="mt-2 text-xs text-muted-foreground font-sans">
+                    Querying AI for specialized docs, video tutorials, and exercises...
+                  </p>
                 </div>
               )}
 
@@ -789,7 +929,9 @@ export function NodeDrawer({
                                   <Icons.Youtube className="h-4 w-4 text-red-500" />
                                 )}
                                 {resource.type === "github" && <Icons.Github className="h-4 w-4" />}
-                                {resource.type === "practice" && <Icons.Code2 className="h-4 w-4" />}
+                                {resource.type === "practice" && (
+                                  <Icons.Code2 className="h-4 w-4" />
+                                )}
                                 {resource.type === "blog" && <Icons.BookOpen className="h-4 w-4" />}
                               </div>
 
@@ -878,7 +1020,10 @@ export function NodeDrawer({
                                     >
                                       <div className="absolute inset-0 bg-black/40 transition hover:bg-black/25" />
                                       <div className="z-10 flex h-14 w-14 items-center justify-center rounded-full bg-red-600 text-white shadow-glow transition group-hover:scale-105">
-                                        <Icons.Play className="h-6 w-6 ml-0.5" fill="currentColor" />
+                                        <Icons.Play
+                                          className="h-6 w-6 ml-0.5"
+                                          fill="currentColor"
+                                        />
                                       </div>
                                       <span className="absolute bottom-2 right-2 rounded bg-black/85 px-1.5 py-0.5 text-[9px] text-white">
                                         YouTube Preview
@@ -919,7 +1064,9 @@ export function NodeDrawer({
               {booksLoading && (
                 <div className="flex items-center gap-2 justify-center py-6 border border-dashed border-white/5 rounded-2xl bg-white/2">
                   <Icons.Loader2 className="h-4 w-4 animate-spin text-spark" />
-                  <span className="text-[11px] text-muted-foreground">Searching free programming reference books catalog...</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    Searching free programming reference books catalog...
+                  </span>
                 </div>
               )}
 
@@ -931,21 +1078,33 @@ export function NodeDrawer({
                   </h4>
                   <div className="grid gap-3 sm:grid-cols-2">
                     {recommendedBooks.map((book) => (
-                      <div key={book.id} className="relative overflow-hidden rounded-xl border border-white/5 bg-white/2 p-3 hover:border-spark/20 transition flex flex-col justify-between min-h-[120px]">
+                      <div
+                        key={book.id}
+                        className="relative overflow-hidden rounded-xl border border-white/5 bg-white/2 p-3 hover:border-spark/20 transition flex flex-col justify-between min-h-[120px]"
+                      >
                         <div>
                           <span className="text-[8px] font-semibold uppercase tracking-wider text-purple-400 bg-purple-500/10 px-1.5 py-0.2 rounded w-fit inline-block">
                             {book.category}
                           </span>
-                          <h5 className="font-bold text-xs text-foreground mt-1.5 line-clamp-2 leading-snug">{book.title}</h5>
-                          <p className="text-[9px] text-muted-foreground mt-0.5 truncate">by {book.author}</p>
+                          <h5 className="font-bold text-xs text-foreground mt-1.5 line-clamp-2 leading-snug">
+                            {book.title}
+                          </h5>
+                          <p className="text-[9px] text-muted-foreground mt-0.5 truncate">
+                            by {book.author}
+                          </p>
                         </div>
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/5 text-[10px]">
-                          <span className="font-mono text-[8px] text-muted-foreground">{book.format}</span>
+                          <span className="font-mono text-[8px] text-muted-foreground">
+                            {book.format}
+                          </span>
                           <a
                             href={book.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onClick={() => { playClick(); awardXP(10, `Opened book from roadmap: ${book.title}`); }}
+                            onClick={() => {
+                              playClick();
+                              awardXP(10, `Opened book from roadmap: ${book.title}`);
+                            }}
                             className="text-spark hover:underline font-semibold flex items-center gap-1 cursor-pointer"
                           >
                             <span>Read</span>
@@ -978,10 +1137,12 @@ export function NodeDrawer({
                       </p>
                     </div>
                   </div>
-                  
+
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    This roadmap topic is directly related to the coding challenge <strong>"{matchedBYOX.label}"</strong>. 
-                    You can build a complete, production-ready version of this tool from scratch to earn substantial bonus XP, gain deep system engineering expertise, and showcase it on your resume.
+                    This roadmap topic is directly related to the coding challenge{" "}
+                    <strong>"{matchedBYOX.label}"</strong>. You can build a complete,
+                    production-ready version of this tool from scratch to earn substantial bonus XP,
+                    gain deep system engineering expertise, and showcase it on your resume.
                   </p>
 
                   <div className="pt-2">
@@ -1018,8 +1179,10 @@ export function NodeDrawer({
                   </div>
 
                   <p className="text-xs text-muted-foreground leading-relaxed">
-                    Although there is no pre-built interactive guide for <strong>"{node.title}"</strong>, 
-                    you can prototype a custom sandbox project for it using our AI Project Builder. Describe the concept, select your stack, and let AI initiate the codebase.
+                    Although there is no pre-built interactive guide for{" "}
+                    <strong>"{node.title}"</strong>, you can prototype a custom sandbox project for
+                    it using our AI Project Builder. Describe the concept, select your stack, and
+                    let AI initiate the codebase.
                   </p>
 
                   <div className="pt-2">
@@ -1137,46 +1300,51 @@ export function NodeDrawer({
                       </h4>
 
                       <div className="space-y-4">
-                        {studyGuide.quiz.map((qItem: any, qIdx: number) => (
-                          <div key={qIdx} className="space-y-2">
-                            <p className="text-xs font-semibold text-foreground">
-                              {qIdx + 1}. {qItem.q}
-                            </p>
-                            <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
-                              {qItem.choices.map((choice: string, cIdx: number) => {
-                                const isSelected = quizAnswers[qIdx] === cIdx;
-                                const isCorrect = qItem.answer === cIdx;
+                        {studyGuide.quiz.map(
+                          (
+                            qItem: { q: string; choices: string[]; answer: number },
+                            qIdx: number,
+                          ) => (
+                            <div key={qIdx} className="space-y-2">
+                              <p className="text-xs font-semibold text-foreground">
+                                {qIdx + 1}. {qItem.q}
+                              </p>
+                              <div className="grid grid-cols-1 gap-1.5 sm:grid-cols-2">
+                                {qItem.choices.map((choice: string, cIdx: number) => {
+                                  const isSelected = quizAnswers[qIdx] === cIdx;
+                                  const isCorrect = qItem.answer === cIdx;
 
-                                let choiceClass =
-                                  "border-white/5 bg-white/2 text-muted-foreground hover:bg-white/5";
-                                if (isSelected) {
-                                  choiceClass = "border-spark/50 bg-spark/10 text-foreground";
-                                }
-                                if (quizSubmitted) {
-                                  if (isCorrect) {
-                                    choiceClass =
-                                      "border-emerald-500/50 bg-emerald-500/10 text-emerald-400";
-                                  } else if (isSelected) {
-                                    choiceClass = "border-red-500/50 bg-red-500/10 text-red-400";
+                                  let choiceClass =
+                                    "border-white/5 bg-white/2 text-muted-foreground hover:bg-white/5";
+                                  if (isSelected) {
+                                    choiceClass = "border-spark/50 bg-spark/10 text-foreground";
                                   }
-                                }
-
-                                return (
-                                  <button
-                                    key={cIdx}
-                                    disabled={quizSubmitted}
-                                    onClick={() =>
-                                      setQuizAnswers((prev) => ({ ...prev, [qIdx]: cIdx }))
+                                  if (quizSubmitted) {
+                                    if (isCorrect) {
+                                      choiceClass =
+                                        "border-emerald-500/50 bg-emerald-500/10 text-emerald-400";
+                                    } else if (isSelected) {
+                                      choiceClass = "border-red-500/50 bg-red-500/10 text-red-400";
                                     }
-                                    className={`rounded-lg border px-3 py-2 text-left text-xs transition ${choiceClass}`}
-                                  >
-                                    {choice}
-                                  </button>
-                                );
-                              })}
+                                  }
+
+                                  return (
+                                    <button
+                                      key={cIdx}
+                                      disabled={quizSubmitted}
+                                      onClick={() =>
+                                        setQuizAnswers((prev) => ({ ...prev, [qIdx]: cIdx }))
+                                      }
+                                      className={`rounded-lg border px-3 py-2 text-left text-xs transition ${choiceClass}`}
+                                    >
+                                      {choice}
+                                    </button>
+                                  );
+                                })}
+                              </div>
                             </div>
-                          </div>
-                        ))}
+                          ),
+                        )}
                       </div>
 
                       {!quizSubmitted ? (
@@ -1216,7 +1384,8 @@ export function NodeDrawer({
                   AI-Powered Learning Mindmap
                 </h4>
                 <p className="text-[11px] text-muted-foreground font-sans">
-                  A visual overview of skills, tools, projects, and interview expectations for {node.title}.
+                  A visual overview of skills, tools, projects, and interview expectations for{" "}
+                  {node.title}.
                 </p>
               </div>
 
@@ -1229,8 +1398,10 @@ export function NodeDrawer({
                 </div>
               ) : (
                 (() => {
-                  const data = dynamicData?.mindmap || getFallbackMindmapAndResources(node.title, domainSlug, tier).mindmap;
-                  
+                  const data =
+                    dynamicData?.mindmap ||
+                    getFallbackMindmapAndResources(node.title, domainSlug, tier).mindmap;
+
                   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
                     if (e.button !== 0) return;
                     const target = e.target as SVGElement;
@@ -1311,9 +1482,9 @@ export function NodeDrawer({
                         {/* Transformed container */}
                         <g transform={`translate(${pan.x}, ${pan.y}) scale(${zoom})`}>
                           {/* Connections */}
-                          {data.edges?.map((e: any) => {
-                            const src = data.nodes?.find((n: any) => n.id === e.source);
-                            const tgt = data.nodes?.find((n: any) => n.id === e.target);
+                          {data.edges?.map((e) => {
+                            const src = data.nodes?.find((n) => n.id === e.source);
+                            const tgt = data.nodes?.find((n) => n.id === e.target);
                             if (!src || !tgt) return null;
                             return (
                               <g key={e.id}>
@@ -1327,7 +1498,7 @@ export function NodeDrawer({
                                   strokeDasharray={e.animated ? "4,4" : "none"}
                                   className={e.animated ? "animate-[dash_15s_linear_infinite]" : ""}
                                   style={{
-                                    opacity: 0.45
+                                    opacity: 0.45,
                                   }}
                                 />
                               </g>
@@ -1335,7 +1506,7 @@ export function NodeDrawer({
                           })}
 
                           {/* Nodes */}
-                          {data.nodes?.map((n: any) => {
+                          {data.nodes?.map((n) => {
                             const isRoot = n.type === "root";
                             const isMain = n.type === "main";
                             const isLeaf = n.type === "leaf";
@@ -1350,7 +1521,13 @@ export function NodeDrawer({
                                   onMouseEnter={() => setHoveredNode(n)}
                                   onMouseLeave={() => setHoveredNode(null)}
                                 >
-                                  <circle cx={n.x} cy={n.y} r={isHovered ? "58" : "50"} fill="url(#root-grad)" className="transition-all duration-200" />
+                                  <circle
+                                    cx={n.x}
+                                    cy={n.y}
+                                    r={isHovered ? "58" : "50"}
+                                    fill="url(#root-grad)"
+                                    className="transition-all duration-200"
+                                  />
                                   <rect
                                     x={n.x - 75}
                                     y={n.y - 20}
@@ -1358,7 +1535,7 @@ export function NodeDrawer({
                                     height="40"
                                     rx="12"
                                     fill="oklch(0.16 0.02 270)"
-                                    stroke={isHovered ? "oklch(0.78 0.18 295)" : (n.color || "#fff")}
+                                    stroke={isHovered ? "oklch(0.78 0.18 295)" : n.color || "#fff"}
                                     strokeWidth={isHovered ? "2.5" : "2"}
                                     className="drop-shadow-[0_0_12px_rgba(150,50,255,0.4)] transition-all duration-200"
                                   />
@@ -1369,7 +1546,9 @@ export function NodeDrawer({
                                     fill="#fff"
                                     className="font-semibold text-[9px] uppercase tracking-wider select-none pointer-events-none"
                                   >
-                                    {n.label.length > 20 ? n.label.substring(0, 18) + "..." : n.label}
+                                    {n.label.length > 20
+                                      ? n.label.substring(0, 18) + "..."
+                                      : n.label}
                                   </text>
                                 </g>
                               );
@@ -1391,7 +1570,11 @@ export function NodeDrawer({
                                     height="32"
                                     rx="10"
                                     fill="oklch(0.2 0.03 260)"
-                                    stroke={isHovered ? "oklch(0.78 0.18 295)" : (n.color || "rgba(255,255,255,0.3)")}
+                                    stroke={
+                                      isHovered
+                                        ? "oklch(0.78 0.18 295)"
+                                        : n.color || "rgba(255,255,255,0.3)"
+                                    }
                                     strokeWidth={isHovered ? "2" : "1.5"}
                                     className="transition-all duration-200"
                                   />
@@ -1402,7 +1585,9 @@ export function NodeDrawer({
                                     fill="#fff"
                                     className="font-semibold text-[9px] select-none pointer-events-none"
                                   >
-                                    {n.label.length > 20 ? n.label.substring(0, 18) + "..." : n.label}
+                                    {n.label.length > 20
+                                      ? n.label.substring(0, 18) + "..."
+                                      : n.label}
                                   </text>
                                 </g>
                               );
@@ -1488,8 +1673,6 @@ export function NodeDrawer({
             </div>
           )}
 
-
-
           {/* PERSONAL NOTES TAB */}
           {activeTab === "notes" && (
             <div className="flex flex-col h-[400px]">
@@ -1498,7 +1681,9 @@ export function NodeDrawer({
                   <button
                     onClick={() => setNotesMode("edit")}
                     className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
-                      notesMode === "edit" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground"
+                      notesMode === "edit"
+                        ? "bg-white/10 text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Edit
@@ -1506,7 +1691,9 @@ export function NodeDrawer({
                   <button
                     onClick={() => setNotesMode("preview")}
                     className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition ${
-                      notesMode === "preview" ? "bg-white/10 text-foreground" : "text-muted-foreground hover:text-foreground"
+                      notesMode === "preview"
+                        ? "bg-white/10 text-foreground"
+                        : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
                     Preview
@@ -1535,11 +1722,16 @@ export function NodeDrawer({
                   className="flex-1 w-full rounded-2xl border border-white/5 bg-black/45 p-4 text-xs text-foreground outline-none focus:border-white/10 font-mono placeholder:text-muted-foreground"
                 />
               ) : (
-                <div className="flex-1 w-full rounded-2xl border border-white/5 bg-black/45 p-4 overflow-y-auto text-xs text-muted-foreground leading-relaxed prose prose-invert" data-lenis-prevent>
+                <div
+                  className="flex-1 w-full rounded-2xl border border-white/5 bg-black/45 p-4 overflow-y-auto text-xs text-muted-foreground leading-relaxed prose prose-invert"
+                  data-lenis-prevent
+                >
                   {notesContent.trim() ? (
                     <Markdown>{notesContent}</Markdown>
                   ) : (
-                    <p className="text-center italic py-10">No notes written yet. Switch to Edit to write your first note!</p>
+                    <p className="text-center italic py-10">
+                      No notes written yet. Switch to Edit to write your first note!
+                    </p>
                   )}
                 </div>
               )}

@@ -1,7 +1,15 @@
 import { motion, useInView } from "framer-motion";
 import { useRef, useEffect, useState } from "react";
 
-function AnimatedCounter({ from = 0, to, duration = 2 }: { from?: number, to: number, duration?: number }) {
+function AnimatedCounter({
+  from = 0,
+  to,
+  duration = 2,
+}: {
+  from?: number;
+  to: number;
+  duration?: number;
+}) {
   const nodeRef = useRef<HTMLSpanElement>(null);
   const inView = useInView(nodeRef, { once: true, margin: "-50px" });
   const [count, setCount] = useState(from);
@@ -39,7 +47,7 @@ export function LiveStats() {
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-5xl h-[100px] bg-spark/10 blur-[100px] rounded-full pointer-events-none" />
       <div className="max-w-7xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 relative z-10">
         {STATS.map((stat, i) => (
-          <motion.div 
+          <motion.div
             key={stat.label}
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}

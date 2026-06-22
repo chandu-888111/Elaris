@@ -116,7 +116,7 @@ function RibbonItem({
     >
       <div
         className={cn(
-          "px-6 py-4 rounded-full border border-white/30 backdrop-blur-xl bg-black/60 text-white font-bold tracking-widest uppercase text-sm cursor-pointer",
+          "px-6 py-4 rounded-full border border-white/30 backdrop-blur-md bg-black/60 text-white font-bold tracking-widest uppercase text-sm cursor-pointer",
         )}
         style={{
           boxShadow: `0 0 15px -5px ${item.color}33, inset 0 0 0 1px rgba(255,255,255,0.15)`,

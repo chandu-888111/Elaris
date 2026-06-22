@@ -43,7 +43,7 @@ export function getGeminiClient() {
 export async function generateText(
   provider: "openai" | "gemini",
   prompt: string,
-  options?: { maxTokens?: number }
+  options?: { maxTokens?: number },
 ): Promise<string> {
   if (provider === "openai") {
     const client = getOpenAIClient();

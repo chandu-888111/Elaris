@@ -4,14 +4,18 @@ import { createAnthropic } from "@ai-sdk/anthropic";
 import { createCohere } from "@ai-sdk/cohere";
 import fs from "fs";
 import path from "path";
-import { generateText as originalGenerateText, streamText as originalStreamText, generateObject as originalGenerateObject } from "ai";
+import {
+  generateText as originalGenerateText,
+  streamText as originalStreamText,
+  generateObject as originalGenerateObject,
+} from "ai";
 
 // Fallback to manually load .env.local if the framework/Vite didn't expose non-VITE_ variables to process.env
 try {
   const envPath = path.resolve(process.cwd(), ".env.local");
   if (fs.existsSync(envPath)) {
     const envContent = fs.readFileSync(envPath, "utf-8");
-    envContent.split("\n").forEach(line => {
+    envContent.split("\n").forEach((line) => {
       const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
       if (match) {
         const key = match[1];
@@ -26,8 +30,10 @@ try {
   // ignore
 }
 
+type SDKModel = Parameters<typeof originalGenerateText>[0]["model"];
+
 export function getResourceProviders() {
-  const providers: Array<{ name: string; model: any }> = [];
+  const providers: Array<{ name: string; model: SDKModel | unknown }> = [];
   const key = process.env.PERPLEXITY_API_KEY;
   if (key) {
     try {
@@ -36,10 +42,12 @@ export function getResourceProviders() {
         name: "perplexity-resource",
         apiKey: key,
         baseURL: isOR ? "https://openrouter.ai/api/v1" : "https://api.perplexity.ai",
-        headers: isOR ? {
-          "HTTP-Referer": "https://projectspark.dev",
-          "X-Title": "ProjectSpark",
-        } : undefined,
+        headers: isOR
+          ? {
+              "HTTP-Referer": "https://projectspark.dev",
+              "X-Title": "ProjectSpark",
+            }
+          : undefined,
       });
       providers.push({
         name: "perplexity-resource",
@@ -53,7 +61,14 @@ export function getResourceProviders() {
 }
 
 export const createProjectSparkAiGatewayProvider = (apiKey: string) => {
-  console.log("[AI Gateway] apiKey length:", apiKey?.length, "starts with AIzaSy/AQ:", apiKey?.startsWith("AIzaSy") || apiKey?.startsWith("AQ"), "prefix:", apiKey?.substring(0, 6));
+  console.log(
+    "[AI Gateway] apiKey length:",
+    apiKey?.length,
+    "starts with AIzaSy/AQ:",
+    apiKey?.startsWith("AIzaSy") || apiKey?.startsWith("AQ"),
+    "prefix:",
+    apiKey?.substring(0, 6),
+  );
   if (apiKey && (apiKey.startsWith("AIzaSy") || apiKey.startsWith("AQ"))) {
     const google = createGoogleGenerativeAI({
       apiKey,
@@ -74,7 +89,7 @@ export const createProjectSparkAiGatewayProvider = (apiKey: string) => {
 };
 
 export function getAvailableProviders() {
-  const providers: Array<{ name: string; model: any }> = [];
+  const providers: Array<{ name: string; model: SDKModel | unknown }> = [];
 
   // -1. NVIDIA (via NVIDIA_API_KEY) - Super/Ultra primary API
   if (process.env.NVIDIA_API_KEY) {
@@ -189,8 +204,6 @@ export function getAvailableProviders() {
     }
   }
 
-
-
   // 3. OpenRouter (via OPENROUTER_API_KEY)
   if (process.env.OPENROUTER_API_KEY) {
     try {
@@ -215,7 +228,7 @@ export function getAvailableProviders() {
             }
           }
           return fetch(url, init);
-        }
+        },
       });
       providers.push({
         name: "openrouter",
@@ -245,7 +258,11 @@ export function getAvailableProviders() {
 
   // 5. ProjectSpark (via non-Gemini PROJECTSPARK_API_KEY)
   const projectSparkKey = process.env.PROJECTSPARK_API_KEY;
-  if (projectSparkKey && !projectSparkKey.startsWith("AIzaSy") && !projectSparkKey.startsWith("AQ")) {
+  if (
+    projectSparkKey &&
+    !projectSparkKey.startsWith("AIzaSy") &&
+    !projectSparkKey.startsWith("AQ")
+  ) {
     try {
       const projectSpark = createOpenAICompatible({
         name: "project-spark",
@@ -270,10 +287,10 @@ export function getAvailableProviders() {
     providers.push({
       name: "mock",
       model: {
-        async generateText(_args: any) {
+        async generateText(_args: unknown) {
           return { text: "[Mock AI response]" };
         },
-        async streamText(_args: any) {
+        async streamText(_args: unknown) {
           async function* generator() {
             yield { text: "[Mock AI streaming response]" };
           }
@@ -303,17 +320,17 @@ function setCooldown(name: string) {
 }
 
 export async function generateTextResilient(
-  options: Omit<Parameters<typeof originalGenerateText>[0], "model"> & { model?: any }
+  options: Omit<Parameters<typeof originalGenerateText>[0], "model"> & { model?: SDKModel },
 ) {
   const providers = getAvailableProviders();
-  console.log('[AI Gateway] Available providers count:', providers.length);
+  console.log("[AI Gateway] Available providers count:", providers.length);
   if (providers.length === 0) {
     throw new Error(
-      "No AI API Keys configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, or GROQ_API_KEY in your .env file."
+      "No AI API Keys configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, or GROQ_API_KEY in your .env file.",
     );
   }
 
-  const activeProviders = providers.filter(p => !isCoolingDown(p.name));
+  const activeProviders = providers.filter((p) => !isCoolingDown(p.name));
   const providersToTry = activeProviders.length > 0 ? activeProviders : providers;
 
   let lastError: unknown;
@@ -326,13 +343,15 @@ export async function generateTextResilient(
 
     try {
       console.log(`[AI Resilient] Attempting generation with provider: ${prov.name}`);
+      const { model, ...restOptions } = options;
       const result = await originalGenerateText({
-        ...(options as any),
-        model: prov.model,
-        abortSignal: options.abortSignal && typeof AbortSignal.any === "function"
-          ? AbortSignal.any([options.abortSignal, controller.signal])
-          : controller.signal,
-      });
+        ...restOptions,
+        model: prov.model as SDKModel,
+        abortSignal:
+          options.abortSignal && typeof AbortSignal.any === "function"
+            ? AbortSignal.any([options.abortSignal, controller.signal])
+            : controller.signal,
+      } as Parameters<typeof originalGenerateText>[0]);
       return result;
     } catch (e) {
       console.error(`[AI Resilient] Provider ${prov.name} failed:`, e);
@@ -346,14 +365,14 @@ export async function generateTextResilient(
 }
 
 export async function generateObjectResilient(
-  options: Omit<Parameters<typeof originalGenerateObject>[0], "model"> & { model?: any }
+  options: Omit<Parameters<typeof originalGenerateObject>[0], "model"> & { model?: SDKModel },
 ) {
   const providers = getAvailableProviders();
   if (providers.length === 0) {
     throw new Error("No AI API Keys configured.");
   }
 
-  const activeProviders = providers.filter(p => !isCoolingDown(p.name));
+  const activeProviders = providers.filter((p) => !isCoolingDown(p.name));
   const providersToTry = activeProviders.length > 0 ? activeProviders : providers;
 
   let lastError: unknown;
@@ -366,13 +385,15 @@ export async function generateObjectResilient(
 
     try {
       console.log(`[AI Resilient Object] Attempting generation with provider: ${prov.name}`);
+      const { model, ...restOptions } = options;
       const result = await originalGenerateObject({
-        ...(options as any),
-        model: prov.model,
-        abortSignal: options.abortSignal && typeof AbortSignal.any === "function"
-          ? AbortSignal.any([options.abortSignal, controller.signal])
-          : controller.signal,
-      });
+        ...restOptions,
+        model: prov.model as SDKModel,
+        abortSignal:
+          options.abortSignal && typeof AbortSignal.any === "function"
+            ? AbortSignal.any([options.abortSignal, controller.signal])
+            : controller.signal,
+      } as Parameters<typeof originalGenerateObject>[0]);
       return result;
     } catch (e) {
       console.error(`[AI Resilient Object] Provider ${prov.name} failed:`, e);
@@ -386,15 +407,17 @@ export async function generateObjectResilient(
 }
 
 export async function generateResourceObjectResilient(
-  options: Omit<Parameters<typeof originalGenerateObject>[0], "model"> & { model?: any }
+  options: Omit<Parameters<typeof originalGenerateObject>[0], "model"> & { model?: SDKModel },
 ) {
   let providers = getResourceProviders();
   if (providers.length === 0) {
-    console.warn("[AI Gateway] No Perplexity API Key configured for resources, falling back to general providers.");
+    console.warn(
+      "[AI Gateway] No Perplexity API Key configured for resources, falling back to general providers.",
+    );
     providers = getAvailableProviders();
   }
 
-  const activeProviders = providers.filter(p => !isCoolingDown(p.name));
+  const activeProviders = providers.filter((p) => !isCoolingDown(p.name));
   const providersToTry = activeProviders.length > 0 ? activeProviders : providers;
 
   let lastError: unknown;
@@ -407,13 +430,15 @@ export async function generateResourceObjectResilient(
 
     try {
       console.log(`[AI Resilient Resource] Attempting generation with provider: ${prov.name}`);
+      const { model, ...restOptions } = options;
       const result = await originalGenerateObject({
-        ...(options as any),
-        model: prov.model,
-        abortSignal: options.abortSignal && typeof AbortSignal.any === "function"
-          ? AbortSignal.any([options.abortSignal, controller.signal])
-          : controller.signal,
-      });
+        ...restOptions,
+        model: prov.model as SDKModel,
+        abortSignal:
+          options.abortSignal && typeof AbortSignal.any === "function"
+            ? AbortSignal.any([options.abortSignal, controller.signal])
+            : controller.signal,
+      } as Parameters<typeof originalGenerateObject>[0]);
       return result;
     } catch (e) {
       console.error(`[AI Resilient Resource] Provider ${prov.name} failed:`, e);
@@ -427,16 +452,16 @@ export async function generateResourceObjectResilient(
 }
 
 export async function streamTextResilient(
-  options: Omit<Parameters<typeof originalStreamText>[0], "model"> & { model?: any }
+  options: Omit<Parameters<typeof originalStreamText>[0], "model"> & { model?: SDKModel },
 ) {
   const providers = getAvailableProviders();
   if (providers.length === 0) {
     throw new Error(
-      "No AI API Keys configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, or GROQ_API_KEY in your .env file."
+      "No AI API Keys configured. Please set GEMINI_API_KEY, OPENAI_API_KEY, OPENROUTER_API_KEY, or GROQ_API_KEY in your .env file.",
     );
   }
 
-  const activeProviders = providers.filter(p => !isCoolingDown(p.name));
+  const activeProviders = providers.filter((p) => !isCoolingDown(p.name));
   const providersToTry = activeProviders.length > 0 ? activeProviders : providers;
 
   let lastError: unknown;
@@ -449,13 +474,15 @@ export async function streamTextResilient(
 
     try {
       console.log(`[AI Resilient Stream] Attempting streaming with provider: ${prov.name}`);
+      const { model, ...restOptions } = options;
       const result = await originalStreamText({
-        ...(options as any),
-        model: prov.model,
-        abortSignal: options.abortSignal && typeof AbortSignal.any === "function"
-          ? AbortSignal.any([options.abortSignal, controller.signal])
-          : controller.signal,
-      });
+        ...restOptions,
+        model: prov.model as SDKModel,
+        abortSignal:
+          options.abortSignal && typeof AbortSignal.any === "function"
+            ? AbortSignal.any([options.abortSignal, controller.signal])
+            : controller.signal,
+      } as unknown as Parameters<typeof originalStreamText>[0]);
       return result;
     } catch (e) {
       console.error(`[AI Resilient Stream] Provider ${prov.name} failed:`, e);

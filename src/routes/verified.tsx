@@ -4,9 +4,7 @@ import { playHover, playClick } from "@/lib/sounds";
 
 export const Route = createFileRoute("/verified")({
   head: () => ({
-    meta: [
-      { title: "Email Verified | ProjectSpark" },
-    ],
+    meta: [{ title: "Email Verified | ProjectSpark" }],
   }),
   component: VerifiedPage,
 });
@@ -30,7 +28,9 @@ function VerifiedPage() {
             onClick={playClick}
             className="inline-flex items-center gap-1 font-semibold text-spark transition-colors group cursor-pointer"
           >
-            <span className="underline decoration-spark group-hover:decoration-spark/80">Please login</span>
+            <span className="underline decoration-spark group-hover:decoration-spark/80">
+              Please login
+            </span>
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
           </Link>
         </p>

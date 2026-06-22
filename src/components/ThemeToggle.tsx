@@ -32,11 +32,7 @@ export const ThemeToggle: React.FC = () => {
       whileTap={{ scale: 0.95 }}
       className="flex items-center gap-1 rounded-full px-3 py-1 text-xs font-medium transition-colors"
     >
-      {isLight ? (
-        <Sun className="h-4 w-4" />
-      ) : (
-        <Moon className="h-4 w-4" />
-      )}
+      {isLight ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
       {isLight ? "Light" : "Dark"}
     </MotionButton>
   );

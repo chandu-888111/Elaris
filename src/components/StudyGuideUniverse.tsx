@@ -1,6 +1,14 @@
 import { useRef, useState, useEffect } from "react";
 import type { StudyGuide } from "@/lib/schemas";
-import { Check, Bookmark, GraduationCap, ChevronLeft, ChevronRight, RotateCw, ArrowRight } from "lucide-react";
+import {
+  Check,
+  Bookmark,
+  GraduationCap,
+  ChevronLeft,
+  ChevronRight,
+  RotateCw,
+  ArrowRight,
+} from "lucide-react";
 
 interface Props {
   guide: StudyGuide;
@@ -21,9 +29,9 @@ export function StudyGuideUniverse({
   const [flipped, setFlipped] = useState(false);
   const [warpFactor, setWarpFactor] = useState(1);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  
-  // Total weeks
-  const total = guide.weeks.length;
+
+  // Total modules
+  const total = guide.modules.length;
 
   // Handle active index changes with warp acceleration
   const handleIndexChange = (newIndex: number) => {
@@ -37,7 +45,7 @@ export function StudyGuideUniverse({
   useEffect(() => {
     if (warpFactor > 1) {
       const timer = setTimeout(() => {
-        setWarpFactor(prev => Math.max(1, prev - 0.25));
+        setWarpFactor((prev) => Math.max(1, prev - 0.25));
       }, 40);
       return () => clearTimeout(timer);
     }
@@ -63,12 +71,12 @@ export function StudyGuideUniverse({
 
     // Particle structure
     interface Particle {
-      radius: number;      // Orbit radius
-      angle: number;       // Current angle in radians
-      speed: number;       // Rotation speed
-      size: number;        // Render size
-      color: string;       // Color string
-      pulsePhase: number;  // Pulsing phase
+      radius: number; // Orbit radius
+      angle: number; // Current angle in radians
+      speed: number; // Rotation speed
+      size: number; // Render size
+      color: string; // Color string
+      pulsePhase: number; // Pulsing phase
       type: "star" | "cube" | "polygon";
     }
 
@@ -169,7 +177,7 @@ export function StudyGuideUniverse({
       particles.forEach((p, index) => {
         // Accelerate when warp factor is high
         p.angle += p.speed * warpFactor;
-        
+
         const px = cx + p.radius * Math.cos(p.angle);
         // Squashing the Y dimension creates a flat circular orbit in 3D perspective
         const py = cy + p.radius * Math.sin(p.angle) * 0.24;
@@ -200,7 +208,7 @@ export function StudyGuideUniverse({
           const p2 = particles[j];
           const p2x = cx + p2.radius * Math.cos(p2.angle);
           const p2y = cy + p2.radius * Math.sin(p2.angle) * 0.24;
-          
+
           const dist = Math.hypot(px - p2x, py - p2y);
           if (dist < 75) {
             const alpha = (1 - dist / 75) * 0.16;
@@ -238,8 +246,12 @@ export function StudyGuideUniverse({
       {/* Header Info */}
       <div className="relative z-10 flex justify-between items-center bg-black/35 backdrop-blur-md px-4 py-3 rounded-2xl border border-white/5">
         <div>
-          <span className="text-[10px] font-bold uppercase tracking-widest text-spark">Spatial Universe</span>
-          <h2 className="text-base font-display font-semibold text-foreground">Week {guide.weeks[activeIndex].week}: {guide.weeks[activeIndex].focus}</h2>
+          <span className="text-[10px] font-bold uppercase tracking-widest text-spark">
+            Spatial Universe
+          </span>
+          <h2 className="text-base font-display font-semibold text-foreground">
+            Module {activeIndex + 1}: {guide.modules[activeIndex].title}
+          </h2>
         </div>
         <div className="flex gap-2">
           <button
@@ -261,12 +273,12 @@ export function StudyGuideUniverse({
       </div>
 
       {/* 3D Scene Viewport */}
-      <div 
+      <div
         className="flex-1 w-full flex items-center justify-center relative"
         style={{
           perspective: "1400px",
           perspectiveOrigin: "50% 40%",
-          overflow: "visible"
+          overflow: "visible",
         }}
       >
         {/* 3D Cylinder Track */}
@@ -277,17 +289,17 @@ export function StudyGuideUniverse({
             transform: `translateZ(-${radius}px) rotateY(${-activeIndex * angleStep}deg)`,
             transition: "transform 0.85s cubic-bezier(0.19, 1, 0.22, 1)",
             width: "280px",
-            height: "380px"
+            height: "380px",
           }}
         >
-          {guide.weeks.map((week, idx) => {
+          {guide.modules.map((mod, idx) => {
             const isCurrent = activeIndex === idx;
             const cardAngle = idx * angleStep;
 
             return (
               <CylinderCard
-                key={week.week}
-                weekData={week}
+                key={mod.id}
+                moduleData={mod}
                 index={idx}
                 cardAngle={cardAngle}
                 radius={radius}
@@ -308,14 +320,14 @@ export function StudyGuideUniverse({
       {/* Navigation Indicators */}
       <div className="relative z-10 w-full flex flex-col items-center gap-3">
         <div className="flex gap-2">
-          {guide.weeks.map((_, idx) => (
+          {guide.modules.map((_, idx) => (
             <button
               key={idx}
               onClick={() => handleIndexChange(idx)}
               className={`h-2 rounded-full transition-all duration-300 cursor-none ${
                 activeIndex === idx ? "w-8 bg-spark" : "w-2 bg-white/10 hover:bg-white/30"
               }`}
-              title={`Week ${idx + 1}`}
+              title={`Module ${idx + 1}`}
             />
           ))}
         </div>
@@ -330,7 +342,7 @@ export function StudyGuideUniverse({
 
 // Inner Cylinder Card Component supporting 3D Hover Parallax and Flip
 function CylinderCard({
-  weekData,
+  moduleData,
   index,
   cardAngle,
   radius,
@@ -343,7 +355,7 @@ function CylinderCard({
   onToggleBookmark,
   onSelect,
 }: {
-  weekData: any;
+  moduleData: StudyGuide["modules"][number];
   index: number;
   cardAngle: number;
   radius: number;
@@ -389,7 +401,7 @@ function CylinderCard({
           isCurrent && flipped ? "rotateY(180deg)" : ""
         }`,
         transition: "transform 0.85s cubic-bezier(0.19, 1, 0.22, 1), opacity 0.5s",
-        backfaceVisibility: "visible"
+        backfaceVisibility: "visible",
       }}
     >
       {/* Inner Card Wrapper with Hover Tilt Parallax */}
@@ -399,38 +411,49 @@ function CylinderCard({
         className="w-full h-full relative"
         style={{
           transformStyle: "preserve-3d",
-          transform: isCurrent && !flipped ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.05)` : "scale(1)",
-          transition: "transform 0.15s ease-out"
+          transform:
+            isCurrent && !flipped
+              ? `rotateX(${tilt.x}deg) rotateY(${tilt.y}deg) scale(1.05)`
+              : "scale(1)",
+          transition: "transform 0.15s ease-out",
         }}
       >
         {/* CARD FRONT FACE */}
-        <div 
-          className="absolute inset-0 w-full h-full rounded-3xl border border-white/10 bg-card/85 p-5 backdrop-blur-xl shadow-glow flex flex-col justify-between text-foreground"
+        <div
+          className="absolute inset-0 w-full h-full rounded-3xl border border-white/10 bg-card/85 p-5 backdrop-blur-md shadow-glow flex flex-col justify-between text-foreground"
           style={{
             backfaceVisibility: "hidden",
-            transform: "rotateY(0deg)"
+            transform: "rotateY(0deg)",
           }}
         >
           <div>
             <div className="flex justify-between items-center">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-spark">Week {weekData.week}</span>
-              <button 
+              <span className="text-[10px] font-bold uppercase tracking-widest text-spark">
+                Module {index + 1}
+              </span>
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  onToggleBookmark(`week-${weekData.week}`);
+                  onToggleBookmark(`module-${moduleData.id}`);
                 }}
                 className="text-muted-foreground hover:text-spark transition p-1 cursor-none"
               >
-                <Bookmark className={`h-4 w-4 ${bookmarks[`week-${weekData.week}`] ? "fill-spark text-spark" : ""}`} />
+                <Bookmark
+                  className={`h-4 w-4 ${bookmarks[`module-${moduleData.id}`] ? "fill-spark text-spark" : ""}`}
+                />
               </button>
             </div>
-            
-            <h3 className="mt-3 font-display text-lg font-bold text-foreground leading-snug">{weekData.focus}</h3>
-            
+
+            <h3 className="mt-3 font-display text-lg font-bold text-foreground leading-snug">
+              {moduleData.title}
+            </h3>
+
             <div className="mt-5 space-y-2">
-              <h4 className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">Weekly Topics</h4>
+              <h4 className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
+                Topics & Exercises
+              </h4>
               <ul className="space-y-1.5 text-xs">
-                {(weekData.tasks || []).slice(0, 4).map((task: string, idx: number) => (
+                {(moduleData.practice || []).slice(0, 4).map((task: string, idx: number) => (
                   <li key={idx} className="flex items-start gap-1.5 text-muted-foreground">
                     <Check className="h-3.5 w-3.5 mt-0.5 shrink-0 text-spark" />
                     <span className="line-clamp-1">{task}</span>
@@ -439,7 +462,7 @@ function CylinderCard({
               </ul>
             </div>
           </div>
-          
+
           <div className="space-y-2">
             <button
               onClick={(e) => {
@@ -453,26 +476,32 @@ function CylinderCard({
               className="w-full flex justify-center items-center gap-1.5 rounded-xl bg-gradient-spark px-4 py-2.5 text-xs font-semibold text-primary-foreground shadow-glow transition hover:opacity-90 cursor-none"
             >
               {isCurrent ? (
-                <>Explore Topics <RotateCw className="h-3 w-3" /></>
+                <>
+                  Explore Topics <RotateCw className="h-3 w-3" />
+                </>
               ) : (
-                <>Select Week <ArrowRight className="h-3 w-3" /></>
+                <>
+                  Select Week <ArrowRight className="h-3 w-3" />
+                </>
               )}
             </button>
           </div>
         </div>
 
         {/* CARD BACK FACE */}
-        <div 
-          className="absolute inset-0 w-full h-full rounded-3xl border border-white/10 bg-card/90 p-5 backdrop-blur-2xl shadow-glow flex flex-col justify-between text-foreground"
+        <div
+          className="absolute inset-0 w-full h-full rounded-3xl border border-white/10 bg-card/90 p-5 backdrop-blur-md shadow-glow flex flex-col justify-between text-foreground"
           style={{
             backfaceVisibility: "hidden",
-            transform: "rotateY(180deg)"
+            transform: "rotateY(180deg)",
           }}
         >
           <div className="flex-1 flex flex-col overflow-hidden">
             <div className="flex justify-between items-center mb-3">
-              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">Week {weekData.week} Details</span>
-              <button 
+              <span className="text-[10px] font-bold uppercase tracking-widest text-emerald-400">
+                Module {index + 1} Details
+              </span>
+              <button
                 onClick={(e) => {
                   e.stopPropagation();
                   setFlipped(false);
@@ -482,13 +511,15 @@ function CylinderCard({
                 <RotateCw className="h-3 w-3" /> Flip Back
               </button>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto pr-1 space-y-4" data-lenis-prevent="true">
               <div className="space-y-2">
-                <h4 className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Tasks Checklist</h4>
+                <h4 className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
+                  Practice Exercises
+                </h4>
                 <div className="space-y-1.5">
-                  {(weekData.tasks || []).map((task: string, idx: number) => {
-                    const key = `week-${weekData.week}-task-${idx}`;
+                  {(moduleData.practice || []).map((task: string, idx: number) => {
+                    const key = `prac-${moduleData.id}-${idx}`;
                     return (
                       <button
                         key={idx}
@@ -498,39 +529,37 @@ function CylinderCard({
                         }}
                         className="flex w-full items-start gap-2.5 text-left text-xs text-muted-foreground hover:text-foreground transition py-0.5 cursor-none"
                       >
-                        <div className={`mt-0.5 h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-all ${
-                          completed[key] ? "bg-emerald-500 border-emerald-500 text-white" : "border-white/15 bg-white/5"
-                        }`}>
+                        <div
+                          className={`mt-0.5 h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-all ${
+                            completed[key]
+                              ? "bg-emerald-500 border-emerald-500 text-white"
+                              : "border-white/15 bg-white/5"
+                          }`}
+                        >
                           {completed[key] && <Check className="h-3 w-3 stroke-[3]" />}
                         </div>
-                        <span className={`leading-normal ${completed[key] ? "line-through opacity-40 text-muted-foreground" : ""}`}>{task}</span>
+                        <span
+                          className={`leading-normal ${completed[key] ? "line-through opacity-40 text-muted-foreground" : ""}`}
+                        >
+                          {task}
+                        </span>
                       </button>
                     );
                   })}
                 </div>
               </div>
-              
-              <div className="space-y-2 pt-1 border-t border-white/5">
-                <h4 className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">Recommended Resources</h4>
-                <div className="space-y-1.5">
-                  {(weekData.resources || []).map((res: string, idx: number) => (
-                    <a
-                      key={idx}
-                      href={res.startsWith("http") ? res : `https://www.google.com/search?q=${encodeURIComponent(res)}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      onClick={(e) => e.stopPropagation()}
-                      className="flex items-center gap-1.5 truncate text-xs text-spark hover:underline cursor-none"
-                    >
-                      <span>🔗</span>
-                      <span className="truncate">{res}</span>
-                    </a>
-                  ))}
+
+              {moduleData.build && (
+                <div className="space-y-2 pt-1 border-t border-white/5">
+                  <h4 className="text-[9px] uppercase tracking-widest text-muted-foreground font-bold">
+                    Project
+                  </h4>
+                  <div className="space-y-1.5 text-xs text-spark">{moduleData.build.title}</div>
                 </div>
-              </div>
+              )}
             </div>
           </div>
-          
+
           <div className="pt-3 border-t border-white/5">
             <button
               onClick={(e) => {

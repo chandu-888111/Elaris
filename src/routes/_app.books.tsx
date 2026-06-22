@@ -9,32 +9,46 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
+import type { Json } from "@/integrations/supabase/types";
 
 /** Collapsible on mobile, always-open sidebar on md+ */
-function MobileCollapsible({ label, children, className = "" }: { label: string; children: React.ReactNode; className?: string }) {
+function MobileCollapsible({
+  label,
+  children,
+  className = "",
+}: {
+  label: string;
+  children: React.ReactNode;
+  className?: string;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <div className={`w-full ${className}`}>
       {/* Mobile toggle header */}
       <button
         className="md:hidden w-full flex items-center justify-between py-2.5 px-3 rounded-xl border border-white/10 bg-white/5 text-xs font-semibold text-foreground mb-2"
-        onClick={() => setOpen(o => !o)}
+        onClick={() => setOpen((o) => !o)}
       >
         <span className="flex items-center gap-2">
           <Icons.Filter className="h-3.5 w-3.5 text-spark" />
           {label}
         </span>
-        <Icons.ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`} />
+        <Icons.ChevronDown
+          className={`h-4 w-4 text-muted-foreground transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
       </button>
       {/* Content: always visible on md+, toggle on mobile */}
-      <div className={`${open ? "flex flex-col gap-2" : "hidden"} md:flex md:flex-col md:gap-3 md:h-full`}>
-        <div className="hidden md:block text-[9px] uppercase tracking-widest font-bold text-muted-foreground">{label}</div>
+      <div
+        className={`${open ? "flex flex-col gap-2" : "hidden"} md:flex md:flex-col md:gap-3 md:h-full`}
+      >
+        <div className="hidden md:block text-[9px] uppercase tracking-widest font-bold text-muted-foreground">
+          {label}
+        </div>
         {children}
       </div>
     </div>
   );
 }
-
 
 const booksSearchSchema = z.object({
   restoreId: z.string().optional(),
@@ -74,7 +88,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "JavaScript",
     format: "HTML",
     url: "https://eloquentjavascript.net/",
-    description: "A modern introduction to programming, JavaScript, and the wonders of the digital world."
+    description:
+      "A modern introduction to programming, JavaScript, and the wonders of the digital world.",
   },
   {
     id: "f2",
@@ -83,7 +98,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Rust",
     format: "HTML",
     url: "https://doc.rust-lang.org/book/",
-    description: "The official guide to programming in Rust, teaching safe, concurrent, and highly optimized code systems."
+    description:
+      "The official guide to programming in Rust, teaching safe, concurrent, and highly optimized code systems.",
   },
   {
     id: "f3",
@@ -92,7 +108,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Go",
     format: "HTML",
     url: "https://go101.org/",
-    description: "A book focusing on Go syntax, semantics, and runtime Go architecture. Perfect for deep Go understanding."
+    description:
+      "A book focusing on Go syntax, semantics, and runtime Go architecture. Perfect for deep Go understanding.",
   },
   {
     id: "f4",
@@ -101,7 +118,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Python",
     format: "HTML",
     url: "https://automatetheboringstuff.com/",
-    description: "Learn practical Python programming for complete beginners. Automate boring tasks in minutes."
+    description:
+      "Learn practical Python programming for complete beginners. Automate boring tasks in minutes.",
   },
   {
     id: "f5",
@@ -110,7 +128,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Algorithms",
     format: "PDF",
     url: "https://algs4.cs.princeton.edu/home/",
-    description: "The leading textbook on algorithms and data structures, cataloging sorting, graphs, and string processes."
+    description:
+      "The leading textbook on algorithms and data structures, cataloging sorting, graphs, and string processes.",
   },
   {
     id: "f6",
@@ -119,7 +138,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Algorithms",
     format: "PDF",
     url: "https://opendatastructures.org/",
-    description: "An open source textbook covering standard sequences, queues, hashes, BSTs, and external memory sorting."
+    description:
+      "An open source textbook covering standard sequences, queues, hashes, BSTs, and external memory sorting.",
   },
   {
     id: "f7",
@@ -128,7 +148,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "AI/ML",
     format: "HTML",
     url: "https://www.deeplearningbook.org/",
-    description: "The definitive textbook on Deep Learning algorithms, covering CNNs, RNNs, optimizer engines, and generative modeling."
+    description:
+      "The definitive textbook on Deep Learning algorithms, covering CNNs, RNNs, optimizer engines, and generative modeling.",
   },
   {
     id: "f8",
@@ -137,7 +158,8 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Security",
     format: "GitHub",
     url: "https://github.com/trimstray/the-book-of-secret-knowledge",
-    description: "An extensive curated list of libraries, security tools, cheatsheets, and CLI shell one-liners."
+    description:
+      "An extensive curated list of libraries, security tools, cheatsheets, and CLI shell one-liners.",
   },
   {
     id: "f9",
@@ -146,8 +168,9 @@ const FALLBACK_BOOKS: BookItem[] = [
     category: "Security",
     format: "PDF",
     url: "https://nob.cs.ucdavis.edu/book/",
-    description: "Learn foundational access control structures, cryptography protocols, security audits, and intrusion models."
-  }
+    description:
+      "Learn foundational access control structures, cryptography protocols, security audits, and intrusion models.",
+  },
 ];
 
 const COMMANDS: CLICommand[] = [
@@ -156,149 +179,186 @@ const COMMANDS: CLICommand[] = [
     title: "Regex search file content (ripgrep)",
     desc: "Search directory files recursively for a string pattern with high performance.",
     command: "rg 'target_pattern' src/",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c2",
     title: "Parse & filter JSON responses (jq)",
     desc: "Query properties, format arrays, and filter fields from raw JSON logs.",
     command: "cat logs.json | jq '.logs[0].message'",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c3",
     title: "Interactive Fuzzy File Finder (fzf)",
     desc: "Quick search and match directory files fuzzily in the terminal.",
     command: "find . -type f | fzf",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c4",
     title: "Find ports usage (lsof)",
     desc: "List file descriptors and processes occupying a specific network port.",
     command: "lsof -i :8080",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c4_2",
     title: "Interactive process viewer (htop)",
     desc: "Monitor system resource usage, processes, threads, and CPU load in real time.",
     command: "htop",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c4_3",
     title: "Simplified CLI manuals (tldr)",
     desc: "Retrieve clean, simplified, community-driven markdown manuals and command examples.",
     command: "tldr tar",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c4_4",
     title: "Disk space analyzer (ncdu)",
     desc: "Explore disk usage per directory with an interactive ncurses terminal client.",
     command: "ncdu /var/log",
-    category: "CLI Tools"
+    category: "CLI Tools",
   },
   {
     id: "c5",
     title: "Prune Docker system structures",
     desc: "Purge all unused containers, volumes, dangling image caches, and networks.",
     command: "docker system prune -a --volumes",
-    category: "Docker"
+    category: "Docker",
   },
   {
     id: "c6",
     title: "Live Container Stats Dashboard",
     desc: "Display continuous CPU, memory, and networking stats per container.",
-    command: "docker stats --format \"table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}\"",
-    category: "Docker"
+    command: 'docker stats --format "table {{.Name}}\\t{{.CPUPerc}}\\t{{.MemUsage}}"',
+    category: "Docker",
   },
   {
     id: "c7",
     title: "Debug network container hook",
     desc: "Spin up a temporary alpine container directly on the host network for utilities.",
     command: "docker run -it --rm --network host alpine sh",
-    category: "Docker"
+    category: "Docker",
   },
   {
     id: "c7_2",
     title: "Inspect Container IP Address",
     desc: "Extract the private bridge network IP address of a running Docker container.",
-    command: "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container_name",
-    category: "Docker"
+    command:
+      "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' container_name",
+    category: "Docker",
   },
   {
     id: "c7_3",
     title: "Clean Docker volume leakages",
     desc: "Wipe out all unlinked orphaned volumes to reclaim disk capacity.",
     command: "docker volume prune -f",
-    category: "Docker"
+    category: "Docker",
   },
   {
     id: "c8",
     title: "Stealth SYN Port Scanning (nmap)",
     desc: "Run a stealthy TCP port scan on target nodes without full handshakes.",
     command: "nmap -sS -p 1-65535 target_ip",
-    category: "Network Security"
+    category: "Network Security",
   },
   {
     id: "c9",
     title: "Configure Firewall rules (ufw)",
     desc: "Explicitly authorize incoming traffic to TCP port 22 in Ubuntu systems.",
     command: "sudo ufw allow proto tcp from any to any port 22",
-    category: "Network Security"
+    category: "Network Security",
   },
   {
     id: "c10",
     title: "Capture port 80 traffic (tcpdump)",
     desc: "Intercept and print the first 100 packets related to HTTP requests on interface eth0.",
     command: "sudo tcpdump -i eth0 -n -s 0 -c 100 'tcp port 80'",
-    category: "Network Security"
+    category: "Network Security",
   },
   {
     id: "c10_2",
     title: "Query DNS Server Records (dig)",
     desc: "Retrieve address resolution records, nameservers, and SOA tags for domains.",
     command: "dig +nocmd example.com mx +noall +answer",
-    category: "Network Security"
+    category: "Network Security",
   },
   {
     id: "c10_3",
     title: "Test open socket port (nc)",
     desc: "Check if a target host is listening on a specific TCP port with netcat.",
     command: "nc -zv target_ip 443",
-    category: "Network Security"
+    category: "Network Security",
   },
   {
     id: "c11",
     title: "Find top 10 largest files",
     desc: "Perform a folder lookup compiling and sorting files by disk volume size.",
     command: "find . -type f -exec du -h {} + | sort -hr | head -n 10",
-    category: "One-Liners"
+    category: "One-Liners",
   },
   {
     id: "c12",
     title: "Prune journal logs time limit",
     desc: "Clear journald log segments keeping only logs written in the last 3 days.",
     command: "sudo journalctl --vacuum-time=3d",
-    category: "One-Liners"
+    category: "One-Liners",
   },
   {
     id: "c12_2",
     title: "Find and replace text recursively",
     desc: "Substitute a query string in all files under a directory using sed.",
     command: "find . -type f -name '*.txt' -exec sed -i 's/old_text/new_text/g' {} +",
-    category: "One-Liners"
+    category: "One-Liners",
   },
   {
     id: "c12_3",
     title: "Generate secure random password",
     desc: "Construct a 16-character alphanumeric password with special characters from dev/urandom.",
     command: "tr -dc 'A-Za-z0-9!@#$%' < /dev/urandom | head -c 16; echo",
-    category: "One-Liners"
-  }
+    category: "One-Liners",
+  },
 ];
+
+interface SavedBookBlueprint {
+  category?: string;
+  title?: string;
+}
+
+interface FPBEntry {
+  title: string;
+  url: string;
+  author?: string;
+  notes?: string[];
+}
+
+interface FPBSubsection {
+  section: string;
+  entries?: FPBEntry[];
+}
+
+interface FPBSection {
+  section: string;
+  entries?: FPBEntry[];
+  subsections?: FPBSubsection[];
+}
+
+interface FPBLanguageBlock {
+  language?: {
+    code: string;
+  };
+  sections: FPBSection[];
+}
+
+interface FPBResponse {
+  children?: {
+    children?: FPBLanguageBlock[];
+  }[];
+}
 
 export function BooksDocsHub() {
   const { restoreId } = Route.useSearch();
@@ -318,7 +378,7 @@ export function BooksDocsHub() {
           return;
         }
         if (data && data.blueprint) {
-          const bp = data.blueprint as any;
+          const bp = data.blueprint as unknown as SavedBookBlueprint;
           if (bp.category === "book") {
             setBookSearch(bp.title || "");
             setSelectedBookCat("All");
@@ -348,8 +408,10 @@ export function BooksDocsHub() {
         url: book.url,
         categoryName: book.category,
         format: book.format,
-        description: book.description || `Read this free reference book to master topics related to ${book.category}.`
-      } as any
+        description:
+          book.description ||
+          `Read this free reference book to master topics related to ${book.category}.`,
+      } as Json,
     });
     if (error) {
       toast.error("Save failed: " + error.message);
@@ -361,7 +423,15 @@ export function BooksDocsHub() {
 
   // Free Books list and categories (loaded dynamically or falling back)
   const [booksList, setBooksList] = useState<BookItem[]>(FALLBACK_BOOKS);
-  const [categories, setCategories] = useState<string[]>(["All", "JavaScript", "Rust", "Go", "Python", "Algorithms", "Security"]);
+  const [categories, setCategories] = useState<string[]>([
+    "All",
+    "JavaScript",
+    "Rust",
+    "Go",
+    "Python",
+    "Algorithms",
+    "Security",
+  ]);
   const [loading, setLoading] = useState(false);
 
   // Search states
@@ -376,40 +446,49 @@ export function BooksDocsHub() {
     const fetchLiveBooks = async () => {
       setLoading(true);
       try {
-        const res = await fetch("https://raw.githubusercontent.com/EbookFoundation/free-programming-books-search/master/fpb.json");
-        const data = await res.json();
+        const res = await fetch(
+          "https://raw.githubusercontent.com/EbookFoundation/free-programming-books-search/master/fpb.json",
+        );
+        const data = (await res.json()) as FPBResponse;
 
-        if (data && Array.isArray(data.children) && data.children[0] && Array.isArray(data.children[0].children)) {
-          const enBlocks = data.children[0].children.filter((l: any) => l.language && l.language.code === "en");
+        if (
+          data &&
+          Array.isArray(data.children) &&
+          data.children[0] &&
+          Array.isArray(data.children[0].children)
+        ) {
+          const enBlocks = data.children[0].children.filter(
+            (l) => l.language && l.language.code === "en",
+          );
           const list: BookItem[] = [];
 
-          enBlocks.forEach((enLang: any) => {
-            enLang.sections.forEach((s: any) => {
+          enBlocks.forEach((enLang) => {
+            enLang.sections.forEach((s) => {
               const secName = s.section;
               if (Array.isArray(s.entries)) {
-                s.entries.forEach((e: any) => {
+                s.entries.forEach((e) => {
                   list.push({
                     id: `live-${list.length}`,
                     title: e.title,
                     url: e.url,
                     author: e.author || "Unknown",
                     category: secName,
-                    format: e.notes ? e.notes.join(", ") : "HTML"
+                    format: e.notes ? e.notes.join(", ") : "HTML",
                   });
                 });
               }
               if (Array.isArray(s.subsections)) {
-                s.subsections.forEach((sub: any) => {
+                s.subsections.forEach((sub) => {
                   const subName = sub.section;
                   if (Array.isArray(sub.entries)) {
-                    sub.entries.forEach((e: any) => {
+                    sub.entries.forEach((e) => {
                       list.push({
                         id: `live-${list.length}`,
                         title: e.title,
                         url: e.url,
                         author: e.author || "Unknown",
                         category: `${secName} - ${subName}`,
-                        format: e.notes ? e.notes.join(", ") : "HTML"
+                        format: e.notes ? e.notes.join(", ") : "HTML",
                       });
                     });
                   }
@@ -423,7 +502,7 @@ export function BooksDocsHub() {
 
             // Extract unique categories list
             const cats = new Set<string>();
-            list.forEach(b => {
+            list.forEach((b) => {
               if (b.category) {
                 const trimmed = b.category.trim();
                 const lower = trimmed.toLowerCase();
@@ -454,9 +533,10 @@ export function BooksDocsHub() {
   };
 
   const getFilteredBooks = () => {
-    return booksList.filter(book => {
+    return booksList.filter((book) => {
       const matchCat = selectedBookCat === "All" || book.category === selectedBookCat;
-      const matchText = book.title.toLowerCase().includes(bookSearch.toLowerCase()) ||
+      const matchText =
+        book.title.toLowerCase().includes(bookSearch.toLowerCase()) ||
         book.author.toLowerCase().includes(bookSearch.toLowerCase()) ||
         book.category.toLowerCase().includes(bookSearch.toLowerCase());
       return matchCat && matchText;
@@ -464,9 +544,10 @@ export function BooksDocsHub() {
   };
 
   const getFilteredCommands = () => {
-    return COMMANDS.filter(cmd => {
+    return COMMANDS.filter((cmd) => {
       const matchCat = selectedCliCat === "All" || cmd.category === selectedCliCat;
-      const matchText = cmd.title.toLowerCase().includes(cliSearch.toLowerCase()) ||
+      const matchText =
+        cmd.title.toLowerCase().includes(cliSearch.toLowerCase()) ||
         cmd.desc.toLowerCase().includes(cliSearch.toLowerCase()) ||
         cmd.command.toLowerCase().includes(cliSearch.toLowerCase());
       return matchCat && matchText;
@@ -483,7 +564,7 @@ export function BooksDocsHub() {
       "from-purple-500/20 to-indigo-700/20",
       "from-emerald-500/20 to-teal-700/20",
       "from-pink-500/20 to-purple-600/20",
-      "from-rose-500/20 to-red-700/20"
+      "from-rose-500/20 to-red-700/20",
     ];
     let hash = 0;
     for (let i = 0; i < category.length; i++) {
@@ -503,10 +584,13 @@ export function BooksDocsHub() {
 
       {/* Tabs */}
       <div className="flex border-b border-white/5 mb-6 text-xs font-semibold overflow-x-auto">
-        {(["books", "secret-knowledge"] as const).map(tab => (
+        {(["books", "secret-knowledge"] as const).map((tab) => (
           <button
             key={tab}
-            onClick={() => { playClick(); setActiveSubTab(tab); }}
+            onClick={() => {
+              playClick();
+              setActiveSubTab(tab);
+            }}
             className={`px-6 py-2.5 capitalize transition ${activeSubTab === tab ? "border-b-2 border-spark text-foreground" : "text-muted-foreground hover:text-foreground"}`}
           >
             {tab === "books" ? "Free Programming Books" : "Secret Knowledge CLI"}
@@ -515,11 +599,9 @@ export function BooksDocsHub() {
       </div>
 
       <div className="grid gap-6">
-
         {/* FREE PROGRAMMING BOOKS TAB */}
         {activeSubTab === "books" && (
           <div className="space-y-4 animate-in fade-in duration-300">
-
             {/* Search Bar — always on top on mobile */}
             <div className="relative w-full">
               <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -527,7 +609,7 @@ export function BooksDocsHub() {
                 type="text"
                 placeholder="Search books by title, author, category..."
                 value={bookSearch}
-                onChange={e => setBookSearch(e.target.value)}
+                onChange={(e) => setBookSearch(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-background/50 pl-9 pr-4 py-2 text-xs text-foreground outline-none focus:border-spark focus:ring-1 focus:ring-spark/30 transition-all"
               />
             </div>
@@ -541,16 +623,22 @@ export function BooksDocsHub() {
 
             <div className="grid gap-4 md:grid-cols-[220px_1fr] items-start">
               {/* Categories Sidebar — desktop: sticky full height panel; mobile: collapsible accordion */}
-              <MobileCollapsible label="Categories" className="md:sticky md:top-6 md:h-[calc(100vh-48px)] md:flex-col glass rounded-3xl bg-card/45 border-white/10 p-4">
+              <MobileCollapsible
+                label="Categories"
+                className="md:sticky md:top-6 md:h-[calc(100vh-48px)] md:flex-col glass rounded-3xl bg-card/45 border-white/10 p-4"
+              >
                 <div
                   className="flex flex-col gap-2 font-semibold text-xs md:overflow-y-auto md:flex-1 md:min-h-0 md:pr-1 [&::-webkit-scrollbar]:hidden"
                   style={{ scrollbarWidth: "none" }}
                   data-lenis-prevent
                 >
-                  {categories.map(cat => (
+                  {categories.map((cat) => (
                     <button
                       key={cat}
-                      onClick={() => { playClick(); setSelectedBookCat(cat); }}
+                      onClick={() => {
+                        playClick();
+                        setSelectedBookCat(cat);
+                      }}
                       className={`flex items-center justify-start text-left w-full py-2 px-3 rounded-lg border transition shrink-0 ${
                         selectedBookCat === cat
                           ? "border-spark bg-spark/10 text-spark font-bold"
@@ -572,55 +660,70 @@ export function BooksDocsHub() {
                   data-lenis-prevent
                 >
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    {getFilteredBooks().slice(0, 100).map(book => {
-                      const gradient = book.color || getCategoryColor(book.category);
-                      return (
-                        <HolographicPanel key={book.id} className="p-4 flex flex-col justify-between min-h-[190px]">
-                          <div className="space-y-3">
-                            <div className={`h-20 w-full bg-gradient-to-br ${gradient} rounded-xl border border-white/5 flex flex-col justify-end p-3 relative overflow-hidden`}>
-                              <div className="absolute top-2 right-2 text-spark opacity-10">
-                                <Icons.BookOpen className="h-8 w-8" />
+                    {getFilteredBooks()
+                      .slice(0, 100)
+                      .map((book) => {
+                        const gradient = book.color || getCategoryColor(book.category);
+                        return (
+                          <HolographicPanel
+                            key={book.id}
+                            className="p-4 flex flex-col justify-between min-h-[190px]"
+                          >
+                            <div className="space-y-3">
+                              <div
+                                className={`h-20 w-full bg-gradient-to-br ${gradient} rounded-xl border border-white/5 flex flex-col justify-end p-3 relative overflow-hidden`}
+                              >
+                                <div className="absolute top-2 right-2 text-spark opacity-10">
+                                  <Icons.BookOpen className="h-8 w-8" />
+                                </div>
+                                <span className="px-1.5 py-0.2 rounded bg-background/70 border border-white/10 text-[8px] text-spark font-bold w-fit uppercase mb-1 truncate max-w-full">
+                                  {book.category}
+                                </span>
+                                <h4 className="font-bold text-xs text-foreground truncate">
+                                  {book.title}
+                                </h4>
+                                <p className="text-[9px] text-muted-foreground truncate">
+                                  {book.author}
+                                </p>
                               </div>
-                              <span className="px-1.5 py-0.2 rounded bg-background/70 border border-white/10 text-[8px] text-spark font-bold w-fit uppercase mb-1 truncate max-w-full">
-                                {book.category}
+
+                              <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-3">
+                                {book.description ||
+                                  `Read this free reference book to master topics related to ${book.category}. Accessible online immediately.`}
+                              </p>
+                            </div>
+
+                            <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-3 text-[11px]">
+                              <span className="font-mono text-purple-400 bg-purple-500/10 border border-purple-500/10 px-2 py-0.5 rounded text-[8px] font-bold">
+                                {book.format}
                               </span>
-                              <h4 className="font-bold text-xs text-foreground truncate">{book.title}</h4>
-                              <p className="text-[9px] text-muted-foreground truncate">{book.author}</p>
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => handleSaveBook(book)}
+                                  className="text-muted-foreground hover:text-spark p-1 rounded hover:bg-white/5 transition flex items-center gap-1 cursor-pointer"
+                                  title="Save Book"
+                                >
+                                  <Icons.Bookmark className="h-3.5 w-3.5" />
+                                </button>
+                                <a
+                                  href={book.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onMouseEnter={playHover}
+                                  onClick={() => {
+                                    playClick();
+                                    awardXP(15, `Opened reference book: ${book.title}`);
+                                  }}
+                                  className="text-xs font-semibold text-spark hover:underline flex items-center gap-1"
+                                >
+                                  <span>Read Book</span>
+                                  <Icons.ArrowUpRight className="h-3.5 w-3.5" />
+                                </a>
+                              </div>
                             </div>
-
-                            <p className="text-[11px] leading-relaxed text-muted-foreground line-clamp-3">
-                              {book.description || `Read this free reference book to master topics related to ${book.category}. Accessible online immediately.`}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center justify-between pt-3 border-t border-white/5 mt-3 text-[11px]">
-                            <span className="font-mono text-purple-400 bg-purple-500/10 border border-purple-500/10 px-2 py-0.5 rounded text-[8px] font-bold">
-                              {book.format}
-                            </span>
-                            <div className="flex items-center gap-3">
-                              <button
-                                onClick={() => handleSaveBook(book)}
-                                className="text-muted-foreground hover:text-spark p-1 rounded hover:bg-white/5 transition flex items-center gap-1 cursor-pointer"
-                                title="Save Book"
-                              >
-                                <Icons.Bookmark className="h-3.5 w-3.5" />
-                              </button>
-                              <a
-                                href={book.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onMouseEnter={playHover}
-                                onClick={() => { playClick(); awardXP(15, `Opened reference book: ${book.title}`); }}
-                                className="text-xs font-semibold text-spark hover:underline flex items-center gap-1"
-                              >
-                                <span>Read Book</span>
-                                <Icons.ArrowUpRight className="h-3.5 w-3.5" />
-                              </a>
-                            </div>
-                          </div>
-                        </HolographicPanel>
-                      );
-                    })}
+                          </HolographicPanel>
+                        );
+                      })}
                     {getFilteredBooks().length > 100 && (
                       <div className="sm:col-span-2 xl:col-span-3 p-4 text-center text-xs text-muted-foreground bg-white/2 rounded-2xl border border-white/5">
                         Showing top 100 of {getFilteredBooks().length} books. Use search to refine.
@@ -636,7 +739,6 @@ export function BooksDocsHub() {
         {/* SECRET KNOWLEDGE CLI TAB */}
         {activeSubTab === "secret-knowledge" && (
           <div className="space-y-4 animate-in fade-in duration-300">
-
             {/* Search Bar — always on top */}
             <div className="relative w-full">
               <Icons.Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -644,7 +746,7 @@ export function BooksDocsHub() {
                 type="text"
                 placeholder="Search commands, flags, descriptions..."
                 value={cliSearch}
-                onChange={e => setCliSearch(e.target.value)}
+                onChange={(e) => setCliSearch(e.target.value)}
                 className="w-full rounded-xl border border-white/10 bg-background/50 pl-9 pr-4 py-2 text-xs text-foreground outline-none focus:border-spark focus:ring-1 focus:ring-spark/30 transition-all"
               />
             </div>
@@ -656,16 +758,22 @@ export function BooksDocsHub() {
 
             <div className="grid gap-4 md:grid-cols-[200px_1fr] items-start">
               {/* CLI categories — collapsible on mobile */}
-              <MobileCollapsible label="CLI Contexts" className="md:sticky md:top-6 md:h-[calc(100vh-48px)] md:flex-col glass rounded-3xl bg-card/45 border-white/10 p-4">
+              <MobileCollapsible
+                label="CLI Contexts"
+                className="md:sticky md:top-6 md:h-[calc(100vh-48px)] md:flex-col glass rounded-3xl bg-card/45 border-white/10 p-4"
+              >
                 <div
                   className="flex flex-col gap-2 font-semibold text-xs md:overflow-y-auto md:flex-1 md:min-h-0 md:pr-1 [&::-webkit-scrollbar]:hidden"
                   style={{ scrollbarWidth: "none" }}
                   data-lenis-prevent
                 >
-                  {["All", "CLI Tools", "Docker", "Network Security", "One-Liners"].map(cat => (
+                  {["All", "CLI Tools", "Docker", "Network Security", "One-Liners"].map((cat) => (
                     <button
                       key={cat}
-                      onClick={() => { playClick(); setSelectedCliCat(cat); }}
+                      onClick={() => {
+                        playClick();
+                        setSelectedCliCat(cat);
+                      }}
                       className={`flex items-center justify-start text-left w-full py-2 px-3 rounded-lg border transition shrink-0 ${
                         selectedCliCat === cat
                           ? "border-spark bg-spark/10 text-spark font-bold"
@@ -685,16 +793,23 @@ export function BooksDocsHub() {
                   style={{ scrollbarWidth: "none" }}
                   data-lenis-prevent
                 >
-                  {getFilteredCommands().map(cmd => (
-                    <HolographicPanel key={cmd.id} className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                  {getFilteredCommands().map((cmd) => (
+                    <HolographicPanel
+                      key={cmd.id}
+                      className="p-4 flex flex-col md:flex-row md:items-center justify-between gap-4"
+                    >
                       <div className="space-y-1.5 flex-1 min-w-0">
                         <div className="flex items-center gap-2">
                           <span className="px-2 py-0.2 rounded bg-purple-500/10 border border-purple-500/20 text-purple-400 text-[8px] font-bold uppercase tracking-wider">
                             {cmd.category}
                           </span>
-                          <h4 className="font-bold text-xs text-foreground truncate">{cmd.title}</h4>
+                          <h4 className="font-bold text-xs text-foreground truncate">
+                            {cmd.title}
+                          </h4>
                         </div>
-                        <p className="text-xs text-muted-foreground leading-normal max-w-2xl">{cmd.desc}</p>
+                        <p className="text-xs text-muted-foreground leading-normal max-w-2xl">
+                          {cmd.desc}
+                        </p>
 
                         <pre className="p-3 font-mono text-[11px] text-spark bg-background/50 rounded-xl border border-white/5 overflow-x-auto select-text w-full">
                           <code>{cmd.command}</code>
@@ -713,10 +828,8 @@ export function BooksDocsHub() {
                 </div>
               </div>
             </div>
-
           </div>
         )}
-
       </div>
     </PageShell>
   );

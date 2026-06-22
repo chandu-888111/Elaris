@@ -8,7 +8,7 @@ const FEATURES = [
     icon: Code2,
     colSpan: "col-span-1 md:col-span-2",
     rowSpan: "row-span-2",
-    color: "from-spark/20 to-spark/5"
+    color: "from-spark/20 to-spark/5",
   },
   {
     title: "Interactive Roadmaps",
@@ -16,7 +16,7 @@ const FEATURES = [
     icon: Map,
     colSpan: "col-span-1",
     rowSpan: "row-span-1",
-    color: "from-aurora/20 to-aurora/5"
+    color: "from-aurora/20 to-aurora/5",
   },
   {
     title: "AI Mentor",
@@ -24,7 +24,7 @@ const FEATURES = [
     icon: Brain,
     colSpan: "col-span-1",
     rowSpan: "row-span-1",
-    color: "from-emerald-500/20 to-emerald-500/5"
+    color: "from-emerald-500/20 to-emerald-500/5",
   },
   {
     title: "Mock Interviews",
@@ -32,7 +32,7 @@ const FEATURES = [
     icon: Target,
     colSpan: "col-span-1",
     rowSpan: "row-span-1",
-    color: "from-orange-500/20 to-orange-500/5"
+    color: "from-orange-500/20 to-orange-500/5",
   },
   {
     title: "Global Collaboration",
@@ -40,15 +40,15 @@ const FEATURES = [
     icon: Users,
     colSpan: "col-span-1 md:col-span-2",
     rowSpan: "row-span-1",
-    color: "from-blue-500/20 to-blue-500/5"
-  }
+    color: "from-blue-500/20 to-blue-500/5",
+  },
 ];
 
 export function BentoGrid() {
   return (
     <div className="py-32 px-6 md:px-24  relative z-10">
       <div className="max-w-7xl mx-auto">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 50 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true, margin: "-100px" }}
@@ -56,10 +56,15 @@ export function BentoGrid() {
           className="mb-16"
         >
           <h2 className="text-4xl md:text-6xl font-bold font-display tracking-tight text-white mb-6">
-            Everything a <span className="text-transparent bg-clip-text bg-gradient-to-r from-spark to-aurora">Developer Needs</span>.
+            Everything a{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-spark to-aurora">
+              Developer Needs
+            </span>
+            .
           </h2>
           <p className="text-xl text-white/50 max-w-2xl">
-            ProjectSpark isn't just a learning platform. It's a complete operating system for your career, combining AI generation, 3D visualizations, and global networking.
+            ProjectSpark isn't just a learning platform. It's a complete operating system for your
+            career, combining AI generation, 3D visualizations, and global networking.
           </p>
         </motion.div>
 
@@ -73,7 +78,9 @@ export function BentoGrid() {
               transition={{ duration: 0.5, delay: i * 0.1 }}
               className={`glass rounded-3xl p-8 border border-white/10 relative overflow-hidden group hover:border-white/30 transition-colors ${feat.colSpan} ${feat.rowSpan}`}
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${feat.color} opacity-50 group-hover:opacity-100 transition-opacity duration-500`} />
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${feat.color} opacity-50 group-hover:opacity-100 transition-opacity duration-500`}
+              />
               <div className="relative z-10 h-full flex flex-col justify-between">
                 <div className="h-12 w-12 rounded-2xl bg-white/10 flex items-center justify-center backdrop-blur-md border border-white/10">
                   <feat.icon className="h-6 w-6 text-white" />

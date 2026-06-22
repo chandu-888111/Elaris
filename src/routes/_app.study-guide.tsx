@@ -17,7 +17,9 @@ import { lazy, Suspense } from "react";
 
 // Lazy load heavy 3D background and components
 const LibraryCanvas = lazy(() => import("@/components/canvas/LibraryCanvas"));
-const StudyGuideUniverse = lazy(() => import("@/components/StudyGuideUniverse").then(m => ({ default: m.StudyGuideUniverse })));
+const StudyGuideUniverse = lazy(() =>
+  import("@/components/StudyGuideUniverse").then((m) => ({ default: m.StudyGuideUniverse })),
+);
 
 type StudyRow = {
   id: string;
@@ -89,6 +91,10 @@ function StudyPage() {
         .catch((e) => setErr(e instanceof Error ? e.message : "Failed"))
         .finally(() => setLoading(false));
     }
+    // Omission of 'generate', 'skillLevel', and 'dailyMinutes' is intentional:
+    // we only want to auto-generate a study guide once when the route 'node'
+    // search parameter is loaded, not when other configuration state changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [node]);
 
   useEffect(() => {
@@ -159,7 +165,8 @@ function StudyPage() {
     });
   };
 
-  const totalTasks = guide?.weeks.reduce((a, w) => a + w.tasks.length, 0) ?? 0;
+  const totalTasks =
+    guide?.modules.reduce((a, m) => a + m.practice.length + m.test.length + 1, 0) ?? 0;
   const doneTasks = Object.values(completed).filter(Boolean).length;
   const xp = doneTasks * 25;
   const streak = Math.min(doneTasks, 30);
@@ -169,227 +176,282 @@ function StudyPage() {
       <Suspense fallback={<div className="absolute inset-0 bg-[#01030a]" />}>
         <LibraryCanvas />
       </Suspense>
-      
+
       <div className="relative z-10 h-[calc(100vh-3.5rem)] overflow-y-auto custom-scrollbar p-6">
         <PageHeader
-        icon={GraduationCap}
-        title="AI Study Guide"
-        description="A personalised, week-by-week curriculum with tasks, resources, projects and quizzes."
-        actions={
-          <SaveBar<StudyRow>
-            canSave={!!guide}
-            onSave={onSave}
-            pickerTable="study_guides"
-            pickerSelect="id, created_at, domain, skill_level, goal, daily_minutes, content"
-            pickerToRow={(r) => ({
-              id: r.id,
-              label: r.domain,
-              meta: `${r.skill_level} · ${r.goal}`,
-            })}
-            pickerOnPick={(r) => {
-              setDomain(r.domain);
-              setSkillLevel(r.skill_level);
-              setGoal(r.goal);
-              setDailyMinutes(r.daily_minutes);
-              setGuide(r.content);
-              setCompleted({});
-              setBookmarks({});
-            }}
-          />
-        }
-      />
-
-      <div className="grid gap-6 lg:grid-cols-[360px_1fr] max-w-7xl mx-auto pb-12 mt-6">
-        <HolographicPanel className="space-y-4 rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl self-start sticky top-6">
-          <Field label="Domain">
-            <Pills value={domain} setValue={setDomain} options={DOMAINS} />
-          </Field>
-          <Field label="Skill level">
-            <Pills value={skillLevel} setValue={setSkillLevel} options={LEVELS} />
-          </Field>
-          <Field label="Your goal">
-            <input
-              value={goal}
-              onChange={(e) => setGoal(e.target.value)}
-              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+          icon={GraduationCap}
+          title="AI Study Guide"
+          description="A personalised, week-by-week curriculum with tasks, resources, projects and quizzes."
+          actions={
+            <SaveBar<StudyRow>
+              canSave={!!guide}
+              onSave={onSave}
+              pickerTable="study_guides"
+              pickerSelect="id, created_at, domain, skill_level, goal, daily_minutes, content"
+              pickerToRow={(r) => ({
+                id: r.id,
+                label: r.domain,
+                meta: `${r.skill_level} · ${r.goal}`,
+              })}
+              pickerOnPick={(r) => {
+                setDomain(r.domain);
+                setSkillLevel(r.skill_level);
+                setGoal(r.goal);
+                setDailyMinutes(r.daily_minutes);
+                setGuide(r.content);
+                setCompleted({});
+                setBookmarks({});
+              }}
             />
-          </Field>
-          <Field label={`Daily time: ${dailyMinutes} min`}>
-            <input
-              type="range"
-              min={15}
-              max={240}
-              step={15}
-              value={dailyMinutes}
-              onChange={(e) => setDailyMinutes(+e.target.value)}
-              className="w-full accent-spark"
-            />
-          </Field>
-          <button
-            onClick={onGen}
-            disabled={loading}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-spark px-4 py-3 text-sm font-medium text-primary-foreground shadow-glow disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <GraduationCap className="h-4 w-4" />
-            )}
-            {loading ? "Generating…" : "Generate study guide"}
-          </button>
-          {err && <p className="text-xs text-destructive">{err}</p>}
+          }
+        />
 
-          {guide && (
-            <div className="grid grid-cols-3 gap-2">
-              <MiniStat label="XP" value={xp} />
-              <MiniStat label="Streak" value={`${streak}d`} />
-              <MiniStat label="Done" value={`${doneTasks}/${totalTasks}`} />
-            </div>
-          )}
-        </HolographicPanel>
-
-        <div className="min-h-[400px] space-y-4 relative">
-          {guide && (
-            <div className="absolute right-0 top-0 z-10 flex rounded-xl border border-white/5 bg-black/55 p-1 backdrop-blur">
-              <button
-                onClick={() => setViewMode("3d")}
-                className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
-                  viewMode === "3d"
-                    ? "bg-gradient-spark text-primary-foreground font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                3D Universe
-              </button>
-              <button
-                onClick={() => setViewMode("2d")}
-                className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
-                  viewMode === "2d"
-                    ? "bg-gradient-spark text-primary-foreground font-semibold"
-                    : "text-muted-foreground hover:text-foreground"
-                }`}
-              >
-                2D List
-              </button>
-            </div>
-          )}
-
-          {!guide && !loading && (
-            <div className="flex h-[400px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/40 text-center text-sm text-muted-foreground">
-              <GraduationCap className="mb-3 h-8 w-8 text-spark animate-float" />
-              Pick your goal — get a complete curriculum.
-            </div>
-          )}
-          {loading && (
-            <div className="space-y-3">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted/30" />
-              ))}
-            </div>
-          )}
-          {guide && (
-            <>
-              {viewMode === "3d" ? (
-                <Suspense fallback={<div className="flex h-[400px] items-center justify-center rounded-2xl border border-white/10 bg-black/40"><div className="h-12 w-12 rounded-full border-2 border-spark border-t-transparent animate-spin" /></div>}>
-                  <StudyGuideUniverse
-                    guide={guide}
-                    completed={completed}
-                    onToggleComplete={(k) => setCompleted((c) => ({ ...c, [k]: !c[k] }))}
-                    bookmarks={bookmarks}
-                    onToggleBookmark={(k) => setBookmarks((b) => ({ ...b, [k]: !b[k] }))}
-                  />
-                </Suspense>
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr] max-w-7xl mx-auto pb-12 mt-6">
+          <HolographicPanel className="space-y-4 rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-md self-start sticky top-6">
+            <Field label="Domain">
+              <Pills value={domain} setValue={setDomain} options={DOMAINS} />
+            </Field>
+            <Field label="Skill level">
+              <Pills value={skillLevel} setValue={setSkillLevel} options={LEVELS} />
+            </Field>
+            <Field label="Your goal">
+              <input
+                value={goal}
+                onChange={(e) => setGoal(e.target.value)}
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </Field>
+            <Field label={`Daily time: ${dailyMinutes} min`}>
+              <input
+                type="range"
+                min={15}
+                max={240}
+                step={15}
+                value={dailyMinutes}
+                onChange={(e) => setDailyMinutes(+e.target.value)}
+                className="w-full accent-spark"
+              />
+            </Field>
+            <button
+              onClick={onGen}
+              disabled={loading}
+              className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-spark px-4 py-3 text-sm font-medium text-primary-foreground shadow-glow disabled:opacity-50"
+            >
+              {loading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
               ) : (
-                <>
-                  <HolographicPanel className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl mb-6">
-                    <div className="text-[10px] font-bold uppercase tracking-widest text-spark">Data Core</div>
-                    <h2 className="font-display text-3xl font-bold text-white mt-1">{guide.title}</h2>
-                    <p className="mt-3 text-sm text-white/60 leading-relaxed">{guide.summary}</p>
-                  </HolographicPanel>
-
-                  <div className="space-y-4">
-                    {guide.weeks.map((w) => (
-                      <HolographicPanel key={w.week} className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl hover:bg-white/5 transition-colors">
-                        <div className="mb-4 flex items-center justify-between border-b border-white/10 pb-3">
-                          <h3 className="font-bold text-lg text-white">
-                            Week {w.week} — {w.focus}
-                          </h3>
-                          <span className="text-[10px] uppercase tracking-widest text-muted-foreground">
-                            {w.tasks.length} tasks
-                          </span>
-                        </div>
-                        <ul className="space-y-1.5">
-                          {w.tasks.map((t, i) => {
-                            const k = `w${w.week}-${i}`;
-                            const ck = `b-${k}`;
-                            const byoxLink = getBYOXLinkForTask(t);
-                            return (
-                              <li key={i} className="flex items-center gap-2 text-sm justify-between">
-                                <div className="flex items-start gap-2 min-w-0 flex-1">
-                                  <button
-                                    onClick={() => setCompleted((c) => ({ ...c, [k]: !c[k] }))}
-                                    className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border ${completed[k] ? "border-spark bg-spark text-primary-foreground" : "border-border"}`}
-                                  >
-                                    {completed[k] && "✓"}
-                                  </button>
-                                  <span
-                                    className={`flex-1 truncate ${completed[k] ? "text-muted-foreground line-through" : ""}`}
-                                    title={t}
-                                  >
-                                    {t}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5 shrink-0">
-                                  {byoxLink && (
-                                    <Link
-                                      to="/build-your-own-x"
-                                      search={{ query: byoxLink.query }}
-                                      className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-spark/20 hover:bg-spark/35 border border-spark/30 hover:border-spark/50 text-[9px] font-bold text-spark transition shadow-glow"
-                                    >
-                                      <Cpu className="h-2.5 w-2.5" />
-                                      <span>{byoxLink.label} ↗</span>
-                                    </Link>
-                                  )}
-                                  <button
-                                    onClick={() => setBookmarks((b) => ({ ...b, [ck]: !b[ck] }))}
-                                    className={`shrink-0 ${bookmarks[ck] ? "text-spark" : "text-muted-foreground hover:text-foreground"}`}
-                                  >
-                                    <Bookmark
-                                      className="h-3.5 w-3.5"
-                                      fill={bookmarks[ck] ? "currentColor" : "none"}
-                                    />
-                                  </button>
-                                </div>
-                              </li>
-                            );
-                          })}
-                        </ul>
-                        {w.resources.length > 0 && (
-                          <div className="mt-3 flex flex-wrap gap-1.5">
-                            {w.resources.map((r, i) => (
-                              <span
-                                key={i}
-                                className="rounded-md border border-border bg-background/40 px-2 py-0.5 text-[10px] text-muted-foreground"
-                              >
-                                {r}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </HolographicPanel>
-                    ))}
-                  </div>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <Card icon={FlaskConical} title="Mini projects" items={guide.miniProjects} />
-                    <Card icon={Brain} title="Quizzes" items={guide.quizzes} />
-                  </div>
-                </>
+                <GraduationCap className="h-4 w-4" />
               )}
-            </>
-          )}
+              {loading ? "Generating…" : "Generate study guide"}
+            </button>
+            {err && <p className="text-xs text-destructive">{err}</p>}
+
+            {guide && (
+              <div className="grid grid-cols-3 gap-2">
+                <MiniStat label="XP" value={xp} />
+                <MiniStat label="Streak" value={`${streak}d`} />
+                <MiniStat label="Done" value={`${doneTasks}/${totalTasks}`} />
+              </div>
+            )}
+          </HolographicPanel>
+
+          <div className="min-h-[400px] space-y-4 relative">
+            {guide && (
+              <div className="absolute right-0 top-0 z-10 flex rounded-xl border border-white/5 bg-black/55 p-1 backdrop-blur">
+                <button
+                  onClick={() => setViewMode("3d")}
+                  className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
+                    viewMode === "3d"
+                      ? "bg-gradient-spark text-primary-foreground font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  3D Universe
+                </button>
+                <button
+                  onClick={() => setViewMode("2d")}
+                  className={`rounded-lg px-2.5 py-1.5 text-[10px] font-semibold uppercase tracking-widest transition-colors ${
+                    viewMode === "2d"
+                      ? "bg-gradient-spark text-primary-foreground font-semibold"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  2D List
+                </button>
+              </div>
+            )}
+
+            {!guide && !loading && (
+              <div className="flex h-[400px] flex-col items-center justify-center rounded-2xl border border-dashed border-border bg-card/40 text-center text-sm text-muted-foreground">
+                <GraduationCap className="mb-3 h-8 w-8 text-spark animate-float" />
+                Pick your goal — get a complete curriculum.
+              </div>
+            )}
+            {loading && (
+              <div className="space-y-3">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="h-24 animate-pulse rounded-2xl bg-muted/30" />
+                ))}
+              </div>
+            )}
+            {guide && (
+              <>
+                {viewMode === "3d" ? (
+                  <Suspense
+                    fallback={
+                      <div className="flex h-[400px] items-center justify-center rounded-2xl border border-white/10 bg-black/40">
+                        <div className="h-12 w-12 rounded-full border-2 border-spark border-t-transparent animate-spin" />
+                      </div>
+                    }
+                  >
+                    <StudyGuideUniverse
+                      guide={guide}
+                      completed={completed}
+                      onToggleComplete={(k) => setCompleted((c) => ({ ...c, [k]: !c[k] }))}
+                      bookmarks={bookmarks}
+                      onToggleBookmark={(k) => setBookmarks((b) => ({ ...b, [k]: !b[k] }))}
+                    />
+                  </Suspense>
+                ) : (
+                  <>
+                    <HolographicPanel className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-md mb-6">
+                      <div className="text-[10px] font-bold uppercase tracking-widest text-spark">
+                        Data Core
+                      </div>
+                      <h2 className="font-display text-3xl font-bold text-white mt-1">
+                        {guide.title}
+                      </h2>
+                      <p className="mt-3 text-sm text-white/60 leading-relaxed">{guide.summary}</p>
+                    </HolographicPanel>
+
+                    <div className="space-y-8">
+                      {guide.modules.map((m, idx) => (
+                        <HolographicPanel
+                          key={m.id}
+                          className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-md transition-colors"
+                        >
+                          <div className="mb-6 flex items-center justify-between border-b border-white/10 pb-4">
+                            <h3 className="font-bold text-xl text-white">
+                              Module {idx + 1} — {m.title}
+                            </h3>
+                          </div>
+
+                          <div className="space-y-6">
+                            {/* LEARN */}
+                            <div>
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-spark mb-2 flex items-center gap-2">
+                                <BookOpen className="h-3 w-3" /> Learn
+                              </h4>
+                              <p className="text-sm text-white/70 leading-relaxed whitespace-pre-wrap">
+                                {m.learn}
+                              </p>
+                            </div>
+
+                            {/* VISUALIZE */}
+                            <div>
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-aurora mb-2 flex items-center gap-2">
+                                <Cpu className="h-3 w-3" /> Visualize
+                              </h4>
+                              <pre className="bg-black/50 border border-white/5 rounded-xl p-4 text-xs font-mono text-white/60 overflow-x-auto">
+                                {m.visualize}
+                              </pre>
+                            </div>
+
+                            {/* PRACTICE */}
+                            <div>
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-emerald-400 mb-2 flex items-center gap-2">
+                                <FlaskConical className="h-3 w-3" /> Practice
+                              </h4>
+                              <ul className="space-y-2">
+                                {m.practice.map((t, i) => {
+                                  const k = `prac-${m.id}-${i}`;
+                                  return (
+                                    <li key={i} className="flex items-start gap-3 text-sm">
+                                      <button
+                                        onClick={() => setCompleted((c) => ({ ...c, [k]: !c[k] }))}
+                                        className={`mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border ${completed[k] ? "border-emerald-400 bg-emerald-400 text-black" : "border-white/20"}`}
+                                      >
+                                        {completed[k] && "✓"}
+                                      </button>
+                                      <span
+                                        className={`flex-1 ${completed[k] ? "text-white/30 line-through" : "text-white/80"}`}
+                                      >
+                                        {t}
+                                      </span>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            </div>
+
+                            {/* BUILD */}
+                            <div className="bg-white/5 border border-white/10 rounded-2xl p-5">
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-purple-400 mb-2">
+                                Build: {m.build.title}
+                              </h4>
+                              <p className="text-sm text-white/70 mb-3">{m.build.description}</p>
+                              <button
+                                onClick={() =>
+                                  setCompleted((c) => ({
+                                    ...c,
+                                    [`build-${m.id}`]: !c[`build-${m.id}`],
+                                  }))
+                                }
+                                className={`text-xs px-3 py-1.5 rounded-lg border ${completed[`build-${m.id}`] ? "bg-purple-500/20 border-purple-500 text-purple-300" : "bg-transparent border-white/20 text-white/60"}`}
+                              >
+                                {completed[`build-${m.id}`] ? "Completed Project" : "Mark as Built"}
+                              </button>
+                            </div>
+
+                            {/* TEST */}
+                            <div>
+                              <h4 className="text-[10px] font-bold uppercase tracking-widest text-blue-400 mb-3 flex items-center gap-2">
+                                <Brain className="h-3 w-3" /> Test Knowledge
+                              </h4>
+                              <div className="space-y-4">
+                                {m.test.map((t, i) => {
+                                  const k = `test-${m.id}-${i}`;
+                                  return (
+                                    <div
+                                      key={i}
+                                      className="bg-black/30 rounded-xl p-4 border border-white/5"
+                                    >
+                                      <p className="text-sm font-medium text-white mb-3">
+                                        {t.question}
+                                      </p>
+                                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        {t.options.map((opt, oIdx) => (
+                                          <button
+                                            key={oIdx}
+                                            onClick={() => {
+                                              if (opt === t.answer) {
+                                                setCompleted((c) => ({ ...c, [k]: true }));
+                                                toast.success("Correct answer!");
+                                              } else {
+                                                toast.error("Incorrect, try again.");
+                                              }
+                                            }}
+                                            className={`text-left text-xs p-2.5 rounded-lg border transition-colors ${completed[k] && opt === t.answer ? "bg-emerald-500/20 border-emerald-500 text-emerald-300" : "bg-white/5 border-white/10 hover:bg-white/10 text-white/70"}`}
+                                          >
+                                            {opt}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          </div>
+                        </HolographicPanel>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
+            )}
+          </div>
         </div>
-      </div>
       </div>
     </PageShell>
   );
@@ -446,7 +508,7 @@ function Card({
   items: string[];
 }) {
   return (
-    <HolographicPanel className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-3xl">
+    <HolographicPanel className="rounded-3xl border border-white/10 bg-black/40 p-6 backdrop-blur-md">
       <div className="mb-4 flex items-center gap-2">
         <Icon className="h-5 w-5 text-spark" />
         <h3 className="text-sm font-bold uppercase tracking-widest text-white">{title}</h3>

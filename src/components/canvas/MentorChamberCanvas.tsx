@@ -1,4 +1,5 @@
-import { Canvas, useFrame } from "@react-three/fiber";
+import { SharedCanvas as Canvas } from "@/components/SharedCanvas";
+import { useFrame } from "@react-three/fiber";
 import { Sphere, Stars, OrbitControls } from "@react-three/drei";
 import * as THREE from "three";
 import { Suspense, useRef } from "react";
@@ -7,21 +8,21 @@ import { EffectComposer, Bloom } from "@react-three/postprocessing";
 function HolographicEntity({ isTyping }: { isTyping: boolean }) {
   const meshRef = useRef<THREE.Mesh>(null);
   const ringRef = useRef<THREE.Mesh>(null);
-  
+
   useFrame((state) => {
     const time = state.clock.elapsedTime;
     const speedMultiplier = isTyping ? 3.0 : 0.5;
-    
+
     if (meshRef.current) {
       meshRef.current.rotation.y = time * 0.2 * speedMultiplier;
       meshRef.current.rotation.x = Math.sin(time * 0.1) * 0.1;
-      
+
       const pulseFreq = isTyping ? 5.0 : 1.5;
       const pulseAmp = isTyping ? 0.05 : 0.02;
       const scale = 1.0 + Math.sin(time * pulseFreq) * pulseAmp;
       meshRef.current.scale.set(scale, scale, scale);
     }
-    
+
     if (ringRef.current) {
       ringRef.current.rotation.x = Math.PI / 2 + Math.sin(time * 0.5) * 0.2;
       ringRef.current.rotation.y = time * 0.1 * speedMultiplier;
@@ -42,9 +43,9 @@ function HolographicEntity({ isTyping }: { isTyping: boolean }) {
           opacity={0.6}
         />
       </Sphere>
-      
+
       <Sphere args={[1.4, 64, 64]}>
-         <meshPhysicalMaterial
+        <meshPhysicalMaterial
           color="#38bdf8"
           emissive="#38bdf8"
           emissiveIntensity={isTyping ? 0.5 : 0.1}
@@ -71,17 +72,21 @@ export default function MentorChamberCanvas({ isTyping }: { isTyping: boolean })
           <pointLight position={[5, 5, 5]} intensity={2} color="#a78bfa" />
           <pointLight position={[-5, -5, -5]} intensity={1} color="#38bdf8" />
           <Stars radius={20} depth={10} count={1000} factor={2} saturation={1} fade speed={0.5} />
-          
+
           <HolographicEntity isTyping={isTyping} />
-          
-          <OrbitControls 
-            enableZoom={false} 
+
+          <OrbitControls
+            enableZoom={false}
             enablePan={false}
             maxPolarAngle={Math.PI / 1.5}
             minPolarAngle={Math.PI / 3}
           />
           <EffectComposer multisampling={4}>
-            <Bloom luminanceThreshold={0.2} luminanceSmoothing={0.9} intensity={isTyping ? 2.5 : 1.5} />
+            <Bloom
+              luminanceThreshold={0.2}
+              luminanceSmoothing={0.9}
+              intensity={isTyping ? 2.5 : 1.5}
+            />
           </EffectComposer>
         </Suspense>
       </Canvas>

@@ -20,7 +20,10 @@ export async function generateResumePDF(resume: Resume): Promise<Uint8Array> {
   let y = height - margin;
   const lineHeight = 14;
 
-  const drawText = (text: string, opts: { size?: number; bold?: boolean; color?: [number, number, number] } = {}) => {
+  const drawText = (
+    text: string,
+    opts: { size?: number; bold?: boolean; color?: [number, number, number] } = {},
+  ) => {
     const { size = 12, bold = false, color = [0, 0, 0] } = opts;
     const f = bold ? fontBold : font;
     page.drawText(text, {
@@ -60,17 +63,17 @@ export async function generateResumePDF(resume: Resume): Promise<Uint8Array> {
   if (resume.experience.length)
     section(
       "Experience",
-      resume.experience.map((e) => `${e.role} @ ${e.company} (${e.period})`)
+      resume.experience.map((e) => `${e.role} @ ${e.company} (${e.period})`),
     );
   if (resume.projects.length)
     section(
       "Projects",
-      resume.projects.map((p) => `${p.name}: ${p.description}`)
+      resume.projects.map((p) => `${p.name}: ${p.description}`),
     );
   if (resume.education.length)
     section(
       "Education",
-      resume.education.map((e) => `${e.degree}, ${e.school} (${e.period})`)
+      resume.education.map((e) => `${e.degree}, ${e.school} (${e.period})`),
     );
 
   const pdfBytes = await doc.save();

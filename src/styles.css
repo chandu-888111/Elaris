@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap');
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;600;700&display=swap");
 @import "tailwindcss" source(none);
 @source "../src";
 @import "tw-animate-css";
@@ -180,16 +180,19 @@
     * {
       cursor: auto !important;
     }
-    a, button, [role="button"] {
+    a,
+    button,
+    [role="button"] {
       cursor: pointer !important;
     }
     /* Improve tap targets on mobile */
-    button, a, [role="button"] {
+    button,
+    a,
+    [role="button"] {
       touch-action: manipulation;
     }
   }
 }
-
 
 @layer utilities {
   .glass {
@@ -356,13 +359,14 @@
   }
 
   @keyframes card-glow {
-    0%, 100% {
+    0%,
+    100% {
       border-color: color-mix(in oklab, white 8%, transparent);
       box-shadow: 0 20px 60px -24px oklch(0 0 0 / 0.6);
     }
     50% {
       border-color: color-mix(in oklab, var(--spark) 28%, transparent);
-      box-shadow: 
+      box-shadow:
         0 20px 60px -24px oklch(0 0 0 / 0.6),
         0 0 20px -3px oklch(0.78 0.18 295 / 0.2);
     }

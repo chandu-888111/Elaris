@@ -11,8 +11,8 @@ export const deleteCurrentUserAccount = createServerFn({ method: "POST" })
     }
 
     console.log(`[auth] Initiating deletion for user ID: ${userId}`);
-  console.log(`[auth] Using supabaseAdmin client:`, !!supabaseAdmin);
-  console.log(`[auth] Deleting user account: ${userId}`);
+    console.log(`[auth] Using supabaseAdmin client:`, !!supabaseAdmin);
+    console.log(`[auth] Deleting user account: ${userId}`);
 
     // Call Supabase admin auth API to delete the user.
     // This will trigger cascade delete on all foreign key references in public schema.

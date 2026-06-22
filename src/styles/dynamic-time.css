@@ -1,0 +1,20 @@
+/* src/styles/dynamic-time.css */
+
+:root {
+  /* Represents the progress of the narrative universe from 0 (begin) to 1 (final) */
+  --universe-progress: 0;
+  /* Example usage: background gradients can reference this variable */
+  /* background: linear-gradient(to bottom, var(--start-color), var(--end-color) calc(var(--universe-progress) * 100%)); */
+}
+
+/* Example gradient that darkens early and brightens later */
+body {
+  background: linear-gradient(
+    to bottom,
+    hsl(230, 30%, 10%) 0%,
+    hsl(230, 30%, 30%) calc(var(--universe-progress) * 30%),
+    hsl(260, 40%, 45%) calc(var(--universe-progress) * 60%),
+    hsl(60, 70%, 80%) calc(var(--universe-progress) * 100%)
+  );
+  transition: background 0.5s ease-out;
+}

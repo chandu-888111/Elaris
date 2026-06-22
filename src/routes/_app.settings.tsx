@@ -3,7 +3,16 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/integrations/supabase/client";
 import { PageShell, PageHeader } from "@/components/PageHeader";
-import { Settings as SettingsIcon, LogOut, Trash2, Moon, Bell, Lock, Loader2, UserMinus } from "lucide-react";
+import {
+  Settings as SettingsIcon,
+  LogOut,
+  Trash2,
+  Moon,
+  Bell,
+  Lock,
+  Loader2,
+  UserMinus,
+} from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { deleteCurrentUserAccount } from "@/lib/auth.functions";
 
@@ -52,8 +61,8 @@ function SettingsPage() {
     setBusy(true);
     try {
       // Try database RPC first (bypasses SUPABASE_SERVICE_ROLE_KEY environment variable mismatch issues)
-      const { error: rpcError } = await supabase.rpc("delete_user_account" as any);
-      
+      const { error: rpcError } = await supabase.rpc("delete_user_account" as never);
+
       if (rpcError) {
         console.warn("[settings] RPC deletion failed, falling back to server function:", rpcError);
         const res = await deleteCurrentUserAccount();
@@ -61,7 +70,7 @@ function SettingsPage() {
           throw new Error("Failed to delete account via server function");
         }
       }
-      
+
       // Successfully deleted user. Clear session and redirect.
       await signOut();
       nav({ to: "/" });

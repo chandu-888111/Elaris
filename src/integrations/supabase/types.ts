@@ -296,6 +296,11 @@ export type Database = {
           streak_days: number;
           updated_at: string;
           xp: number;
+          mentor_state: Json;
+          learning_analytics: Json;
+          skill_graph: Json;
+          learning_history: Json;
+          career_profile: Json;
         };
         Insert: {
           avatar_url?: string | null;
@@ -307,6 +312,11 @@ export type Database = {
           streak_days?: number;
           updated_at?: string;
           xp?: number;
+          mentor_state?: Json;
+          learning_analytics?: Json;
+          skill_graph?: Json;
+          learning_history?: Json;
+          career_profile?: Json;
         };
         Update: {
           avatar_url?: string | null;
@@ -318,6 +328,11 @@ export type Database = {
           streak_days?: number;
           updated_at?: string;
           xp?: number;
+          mentor_state?: Json;
+          learning_analytics?: Json;
+          skill_graph?: Json;
+          learning_history?: Json;
+          career_profile?: Json;
         };
         Relationships: [];
       };

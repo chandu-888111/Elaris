@@ -1,0 +1,132 @@
+{
+  "chapters": [
+    {
+      "id": "origin",
+      "act": 1,
+      "range": [0, 0.04],
+      "cameraMode": "chase",
+      "background": "void",
+      "uiComponent": "OriginSection"
+    },
+    {
+      "id": "project-generator",
+      "act": 1,
+      "range": [0.04, 0.08],
+      "cameraMode": "side",
+      "background": "dying-planet",
+      "uiComponent": "ProjectGeneratorSection"
+    },
+    {
+      "id": "ai-mentor",
+      "act": 2,
+      "range": [0.08, 0.12],
+      "cameraMode": "orbit",
+      "background": "intelligence-nebula",
+      "uiComponent": "AIMentorSection"
+    },
+    {
+      "id": "study-guide",
+      "act": 2,
+      "range": [0.12, 0.16],
+      "cameraMode": "flyby",
+      "background": "archive-planet",
+      "uiComponent": "StudyGuideSection"
+    },
+    {
+      "id": "roadmap-galaxy",
+      "act": 3,
+      "range": [0.16, 0.2],
+      "cameraMode": "pullback",
+      "background": "node-galaxy",
+      "uiComponent": "RoadmapGalaxySection"
+    },
+    {
+      "id": "construction-planet",
+      "act": 3,
+      "range": [0.2, 0.24],
+      "cameraMode": "side",
+      "background": "construction-megastructure",
+      "uiComponent": "ConstructionPlanetSection"
+    },
+    {
+      "id": "core-intelligence",
+      "act": 3,
+      "range": [0.24, 0.28],
+      "cameraMode": "orbit",
+      "background": "neural-sphere",
+      "uiComponent": "CoreIntelligenceSection"
+    },
+    {
+      "id": "resources-universe",
+      "act": 4,
+      "range": [0.28, 0.32],
+      "cameraMode": "chase",
+      "background": "crystal-asteroid-belt",
+      "uiComponent": "ResourcesUniverseSection"
+    },
+    {
+      "id": "collaboration-fleet",
+      "act": 4,
+      "range": [0.32, 0.36],
+      "cameraMode": "flyby",
+      "background": "fleet-universe",
+      "uiComponent": "CollaborationFleetSection"
+    },
+    {
+      "id": "developer-galaxy",
+      "act": 4,
+      "range": [0.36, 0.4],
+      "cameraMode": "pullback",
+      "background": "builder-constellations",
+      "uiComponent": "DeveloperGalaxySection"
+    },
+    {
+      "id": "ai-ecosystem",
+      "act": 4,
+      "range": [0.4, 0.44],
+      "cameraMode": "orbit",
+      "background": "tech-planet-hub",
+      "uiComponent": "AIEcosystemSection"
+    },
+    {
+      "id": "success-journey",
+      "act": 4,
+      "range": [0.44, 0.48],
+      "cameraMode": "flyby",
+      "background": "wormhole-hyperspace",
+      "uiComponent": "SuccessJourneySection"
+    },
+    {
+      "id": "career-os",
+      "act": 5,
+      "range": [0.48, 0.52],
+      "cameraMode": "pullback",
+      "background": "future-city",
+      "uiComponent": "CareerOSSection"
+    },
+    {
+      "id": "why-projectspark",
+      "act": 5,
+      "range": [0.52, 0.56],
+      "cameraMode": "side",
+      "background": "comparison-holograms",
+      "uiComponent": "WhyProjectSparkSection"
+    },
+    {
+      "id": "everything-to-ship",
+      "act": 5,
+      "range": [0.56, 0.6],
+      "cameraMode": "pullback",
+      "background": "full-ecosystem",
+      "uiComponent": "EverythingToShipSection"
+    },
+    {
+      "id": "projectspark-universe",
+      "act": 5,
+      "range": [0.6, 1.0],
+      "cameraMode": "dramatic",
+      "background": "final-galaxy",
+      "uiComponent": "ProjectSparkUniverseSection"
+    }
+  ]
+}

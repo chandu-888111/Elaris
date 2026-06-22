@@ -25,14 +25,14 @@ const GlowShader = {
       float intensity = pow(0.8 - max(dot(normal, viewDir), 0.0), 2.2);
       gl_FragColor = vec4(0.64, 0.44, 1.0, 1.0) * intensity * 1.5;
     }
-  `
+  `,
 };
 
 function NeuralNetwork() {
   const pointsRef = useRef<Points>(null);
   const linesRef = useRef<LineSegments>(null);
   const count = 60;
-  
+
   // Create initial random points in a spherical shell
   const [particles, pointsArray, linesArray] = useMemo(() => {
     const pts = [];
@@ -43,69 +43,72 @@ function NeuralNetwork() {
       const theta = u * 2.0 * Math.PI;
       const phi = Math.acos(2.0 * v - 1.0);
       const r = 1.6 + Math.random() * 0.5; // spherical shell radius
-      
+
       const x = r * Math.sin(phi) * Math.cos(theta);
       const y = r * Math.sin(phi) * Math.sin(theta);
       const z = r * Math.cos(phi);
-      
+
       pts.push({
-        x, y, z,
+        x,
+        y,
+        z,
         phase: Math.random() * Math.PI * 2,
         speed: 0.15 + Math.random() * 0.25,
-        r
+        r,
       });
-      
+
       ptsArray[i * 3] = x;
       ptsArray[i * 3 + 1] = y;
       ptsArray[i * 3 + 2] = z;
     }
-    
+
     // Max possible lines is count * (count - 1) / 2
     const maxLines = 300;
     const lArray = new Float32Array(maxLines * 2 * 3);
-    
+
     return [pts, ptsArray, lArray];
   }, []);
-  
+
   useFrame((state) => {
     const time = state.clock.elapsedTime;
-    
+
     // Update particle positions (slow rotation + noise)
     const posAttr = pointsRef.current?.geometry.attributes.position;
     if (!posAttr) return;
-    
+
     for (let i = 0; i < count; i++) {
       const p = particles[i];
       // Orbit around Y axis + slight vertical wave
       const angle = time * 0.08 * p.speed + p.phase;
       const x = p.r * Math.cos(angle) * Math.sin(p.phase);
-      const y = p.r * Math.sin(angle) * Math.sin(p.phase) + Math.sin(time * p.speed + p.phase) * 0.12;
+      const y =
+        p.r * Math.sin(angle) * Math.sin(p.phase) + Math.sin(time * p.speed + p.phase) * 0.12;
       const z = p.r * Math.cos(p.phase) + Math.cos(time * p.speed + p.phase) * 0.08;
-      
+
       posAttr.setXYZ(i, x, y, z);
     }
     posAttr.needsUpdate = true;
-    
+
     // Compute connections between nearby nodes
     const lineAttr = linesRef.current?.geometry.attributes.position;
     if (!lineAttr) return;
-    
+
     let lineIdx = 0;
     const maxLines = 300;
     const maxDistance = 0.95;
-    
+
     for (let i = 0; i < count; i++) {
       const x1 = posAttr.getX(i);
       const y1 = posAttr.getY(i);
       const z1 = posAttr.getZ(i);
-      
+
       for (let j = i + 1; j < count; j++) {
         const x2 = posAttr.getX(j);
         const y2 = posAttr.getY(j);
         const z2 = posAttr.getZ(j);
-        
-        const dist = Math.sqrt((x1 - x2)**2 + (y1 - y2)**2 + (z1 - z2)**2);
-        
+
+        const dist = Math.sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2 + (z1 - z2) ** 2);
+
         if (dist < maxDistance && lineIdx < maxLines) {
           lineAttr.setXYZ(lineIdx * 2, x1, y1, z1);
           lineAttr.setXYZ(lineIdx * 2 + 1, x2, y2, z2);
@@ -113,7 +116,7 @@ function NeuralNetwork() {
         }
       }
     }
-    
+
     // Reset remaining elements in the line segments buffer
     for (let i = lineIdx; i < maxLines; i++) {
       lineAttr.setXYZ(i * 2, 0, 0, 0);
@@ -121,16 +124,13 @@ function NeuralNetwork() {
     }
     lineAttr.needsUpdate = true;
   });
-  
+
   return (
     <group>
       {/* Neural network nodes */}
       <points ref={pointsRef}>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[pointsArray, 3]}
-          />
+          <bufferAttribute attach="attributes-position" args={[pointsArray, 3]} />
         </bufferGeometry>
         <pointsMaterial
           color="#c084fc"
@@ -142,14 +142,11 @@ function NeuralNetwork() {
           depthWrite={false}
         />
       </points>
-      
+
       {/* Neural network connection lines */}
       <lineSegments ref={linesRef}>
         <bufferGeometry>
-          <bufferAttribute
-            attach="attributes-position"
-            args={[linesArray, 3]}
-          />
+          <bufferAttribute attach="attributes-position" args={[linesArray, 3]} />
         </bufferGeometry>
         <lineBasicMaterial
           color="#38bdf8"
@@ -232,7 +229,15 @@ export function AIOrb({ className }: { className?: string }) {
           <pointLight position={[6, 6, 6]} intensity={2.8} color="#c084fc" />
           <pointLight position={[-6, -4, 3]} intensity={2.0} color="#22d3ee" />
           <pointLight position={[0, -2, -4]} intensity={1.5} color="#ec4899" />
-          <Stars radius={45} depth={30} count={1000} factor={2.5} saturation={0.5} fade speed={0.4} />
+          <Stars
+            radius={45}
+            depth={30}
+            count={1000}
+            factor={2.5}
+            saturation={0.5}
+            fade
+            speed={0.4}
+          />
           <Orb />
         </Suspense>
       </Canvas>

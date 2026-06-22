@@ -1,4 +1,5 @@
-import { Canvas, useFrame } from "@react-three/fiber";
+import { SharedCanvas as Canvas } from "@/components/SharedCanvas";
+import { useFrame } from "@react-three/fiber";
 import { OrbitControls, Sphere, Ring, Stars, Html } from "@react-three/drei";
 import { useRef, useMemo, useState, Suspense } from "react";
 import * as THREE from "three";
@@ -35,7 +36,7 @@ function ConcentricRing({
   color: string;
   label: string;
   valueText: string;
-  icon: any;
+  icon: React.ComponentType<{ className?: string; style?: React.CSSProperties }>;
   index: number;
 }) {
   const bgRef = useRef<THREE.Mesh>(null);
@@ -53,7 +54,7 @@ function ConcentricRing({
       const tilt = Math.sin(time * 0.8 + index) * 0.05;
       fgRef.current.rotation.x = -Math.PI / 2 + tilt;
       bgRef.current.rotation.x = -Math.PI / 2 + tilt;
-      
+
       // Scale pulse on hover
       const scale = hovered ? 1.03 : 1.0;
       fgRef.current.scale.set(scale, scale, scale);
@@ -74,12 +75,7 @@ function ConcentricRing({
         }}
         onPointerOut={() => setHovered(false)}
       >
-        <meshBasicMaterial
-          color={color}
-          transparent
-          opacity={0.12}
-          side={THREE.DoubleSide}
-        />
+        <meshBasicMaterial color={color} transparent opacity={0.12} side={THREE.DoubleSide} />
       </Ring>
 
       {/* Progress ring overlay */}
@@ -107,18 +103,18 @@ function ConcentricRing({
 
       {/* Tooltip on Hover */}
       {hovered && (
-        <Html
-          position={[0, 0, (innerRadius + outerRadius) / 2]}
-          distanceFactor={6}
-          center
-        >
-          <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-black/85 px-3 py-2 text-foreground backdrop-blur-xl shadow-glow select-none pointer-events-none min-w-[120px]">
+        <Html position={[0, 0, (innerRadius + outerRadius) / 2]} distanceFactor={6} center>
+          <div className="flex flex-col items-center gap-1 rounded-xl border border-white/10 bg-black/85 px-3 py-2 text-foreground backdrop-blur-md shadow-glow select-none pointer-events-none min-w-[120px]">
             <div className="flex items-center gap-1.5 text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">
               <Icon className="h-3 w-3" style={{ color }} />
               {label}
             </div>
-            <div className="text-sm font-bold" style={{ color }}>{valueText}</div>
-            <div className="text-[9px] text-muted-foreground">{Math.round(progress * 100)}% of goal</div>
+            <div className="text-sm font-bold" style={{ color }}>
+              {valueText}
+            </div>
+            <div className="text-[9px] text-muted-foreground">
+              {Math.round(progress * 100)}% of goal
+            </div>
           </div>
         </Html>
       )}
@@ -156,7 +152,7 @@ function SkillNode({
       meshRef.current.position.y = pos.y + Math.sin(time * 1.5 + index) * 0.08;
       meshRef.current.rotation.y = time * 0.5;
       meshRef.current.rotation.x = time * 0.2;
-      
+
       const pulse = (hovered ? 1.25 : 1.0) + Math.sin(time * 3.0 + index) * 0.04;
       meshRef.current.scale.set(pulse, pulse, pulse);
     }
@@ -237,12 +233,20 @@ export function AnalyticsUniverse({
 }: AnalyticsUniverseProps) {
   return (
     <div className="relative h-[360px] w-full bg-black/45 rounded-3xl border border-white/5 overflow-hidden">
-      <Canvas camera={{ position: [0, 2.5, 5], fov: 45 }} dpr={[1, 1.5]}>
+      <Canvas camera={{ position: [0, 2.5, 5], fov: 45 }}>
         <Suspense fallback={null}>
           <ambientLight intensity={0.5} />
           <pointLight position={[10, 10, 10]} intensity={1.5} color="#c084fc" />
           <pointLight position={[-10, -10, -10]} intensity={0.8} color="#06b6d4" />
-          <Stars radius={50} depth={20} count={300} factor={1.5} saturation={0.5} fade speed={0.4} />
+          <Stars
+            radius={50}
+            depth={20}
+            count={300}
+            factor={1.5}
+            saturation={0.5}
+            fade
+            speed={0.4}
+          />
 
           <group position={[0, -0.3, 0]}>
             {/* Concentric rings in center */}
@@ -315,10 +319,18 @@ export function AnalyticsUniverse({
 
       {/* Info Overlay */}
       <div className="pointer-events-none absolute bottom-4 left-4 z-10 text-[9px] uppercase tracking-wider text-muted-foreground font-semibold bg-black/55 backdrop-blur px-3 py-1.5 rounded-lg border border-white/5 flex gap-3">
-        <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#38bdf8]" /> Hours</div>
-        <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#c084fc]" /> Projects</div>
-        <div className="flex items-center gap-1"><span className="h-2 w-2 rounded-full bg-[#ec4899]" /> AI</div>
-        <div className="flex items-center gap-1"><Trophy className="h-3 w-3 text-cyan-400" /> Hover Skills</div>
+        <div className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-[#38bdf8]" /> Hours
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-[#c084fc]" /> Projects
+        </div>
+        <div className="flex items-center gap-1">
+          <span className="h-2 w-2 rounded-full bg-[#ec4899]" /> AI
+        </div>
+        <div className="flex items-center gap-1">
+          <Trophy className="h-3 w-3 text-cyan-400" /> Hover Skills
+        </div>
       </div>
     </div>
   );
