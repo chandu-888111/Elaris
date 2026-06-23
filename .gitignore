@@ -39,3 +39,7 @@ dist/
 
 .vercel
 .env*
+
+# Generated build artifacts (Vercel rebuilds from source; output/ is a local mirror only)
+output/
+stats.html
