@@ -20,13 +20,11 @@ export const LandingCanvas: React.FC = () => {
       style={{ position: "fixed", inset: 0, zIndex: -1 }}
     >
       <Suspense fallback={null}>{/* Core scene components will be added here later */}</Suspense>
-      <EffectComposer>
-        {enableBloom ? (
+      {enableBloom ? (
+        <EffectComposer>
           <Bloom luminanceThreshold={0} luminanceSmoothing={0.9} intensity={0.2} />
-        ) : (
-          <></>
-        )}
-      </EffectComposer>
+        </EffectComposer>
+      ) : null}
     </Canvas>
   );
 };

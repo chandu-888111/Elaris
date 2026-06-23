@@ -1,8 +1,9 @@
 // src/components/ui/DebugHud.tsx
 import React, { useEffect, useRef, useState } from "react";
-import { useHudState } from "@/hooks/use-scene-store";
+import { useSceneStore } from "@/hooks/use-scene-store";
 import { useHotkeys } from "@/hooks/use-hotkeys";
 import { useScrollVelocity } from "@/hooks/use-scroll-velocity";
+import { PARTICLE_COUNTS } from "@/constants/particleConstants";
 
 /**
  * Minimal developer HUD showing performance, narrative, ship, accessibility and input metrics.
@@ -12,39 +13,44 @@ export function DebugHud() {
   // Hotkey registration – toggles store.hudVisible
   useHotkeys();
 
-  const {
-    graphicsMode,
-    cameraMode,
-    shipMode,
-    hudVisible,
-    particleCount,
-    shipVelocity,
-    shipBankAngle,
-    reduceMotion,
-    prefersReducedTransparency,
-    audioMuted,
-    scrollProgress,
-  } = useHudState();
+  // Individual selectors to prevent unnecessary render loops
+  const graphicsMode = useSceneStore((s) => s.graphicsMode);
+  const cameraMode = useSceneStore((s) => s.cameraMode);
+  const shipMode = useSceneStore((s) => s.shipMode);
+  const hudVisible = useSceneStore((s) => s.hudVisible);
+  const shipVelocity = useSceneStore((s) => s.shipVelocity);
+  const shipBankAngle = useSceneStore((s) => s.shipBankAngle);
+  const reduceMotion = useSceneStore((s) => s.reduceMotion);
+  const prefersReducedTransparency = useSceneStore((s) => s.prefersReducedTransparency);
+  const audioMuted = useSceneStore((s) => s.audioMuted);
+  const scrollProgress = useSceneStore((s) => s.scrollProgress);
+
+  const particleCount = PARTICLE_COUNTS[graphicsMode];
 
   // Input type from scroll velocity hook
   const { inputType } = useScrollVelocity();
 
-  // Simple FPS / frame‑time tracker (updates ~4×/s)
+  // Simple FPS / frame‑time tracker (updates ~2×/s for performance)
   const [fps, setFps] = useState(0);
   const [frameTime, setFrameTime] = useState(0);
-  const lastTime = useRef<number>(0);
 
   useEffect(() => {
     let rafId: number;
+    let frameCount = 0;
+    let lastFpsUpdate = performance.now();
+
     const tick = () => {
       const now = performance.now();
-      if (lastTime.current !== undefined) {
-        const dt = now - lastTime.current;
-        const currentFps = Math.round(1000 / dt);
+      frameCount++;
+
+      if (now - lastFpsUpdate >= 500) {
+        const dt = now - lastFpsUpdate;
+        const currentFps = Math.round((frameCount * 1000) / dt);
         setFps(currentFps);
-        setFrameTime(Math.round(dt));
+        setFrameTime(Math.round(dt / frameCount));
+        frameCount = 0;
+        lastFpsUpdate = now;
       }
-      lastTime.current = now;
       rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);

@@ -22,7 +22,7 @@ export const Spaceship: React.FC = () => {
     const loadUSDZ = async () => {
       const loader = new USDZLoader();
       try {
-        const gltf = await loader.loadAsync("/assets/Alien_Breed_Starfighter_Reimagined.usdz");
+        const gltf = await loader.loadAsync("/Alien_Breed_Starfighter_Reimagined.usdz");
         setModel(gltf);
         setSource("USDZ");
         console.log("[Spaceship] USDZ loaded");
@@ -35,7 +35,7 @@ export const Spaceship: React.FC = () => {
       const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader");
       const loader = new GLTFLoader();
       try {
-        const gltf = await loader.loadAsync("/assets/Alien_Breed_Starfighter_Reimagined.glb");
+        const gltf = await loader.loadAsync("/Alien_Breed_Starfighter_Reimagined.glb");
         setModel(gltf);
         setSource("GLB");
         console.log("[Spaceship] GLB loaded");
@@ -48,7 +48,7 @@ export const Spaceship: React.FC = () => {
       const { GLTFLoader } = await import("three/examples/jsm/loaders/GLTFLoader");
       const loader = new GLTFLoader();
       try {
-        const gltf = await loader.loadAsync("/assets/placeholderLowPoly.glb");
+        const gltf = await loader.loadAsync("/placeholderLowPoly.glb");
         setModel(gltf);
         setSource("placeholder");
         console.log("[Spaceship] Placeholder loaded");

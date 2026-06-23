@@ -1,6 +1,5 @@
 // src/hooks/use-scroll-velocity.ts
 import { useEffect, useRef, useState } from "react";
-import { useThree } from "@react-three/fiber";
 import * as THREE from "three";
 
 /**
@@ -19,7 +18,6 @@ export interface ScrollVelocity {
 }
 
 export function useScrollVelocity({ smoothing = 0.1 } = { smoothing: 0.1 }) {
-  const { gl } = useThree();
   const [scrollY, setScrollY] = useState(0);
   const [delta, setDelta] = useState(0);
   const [velocity, setVelocity] = useState(0);
@@ -53,6 +51,8 @@ export function useScrollVelocity({ smoothing = 0.1 } = { smoothing: 0.1 }) {
   };
 
   useEffect(() => {
+    if (typeof window === "undefined") return;
+
     const onWheel = (e: WheelEvent) => {
       update(scrollYRef.current + e.deltaY, "wheel");
     };
@@ -74,21 +74,21 @@ export function useScrollVelocity({ smoothing = 0.1 } = { smoothing: 0.1 }) {
         update(scrollYRef.current + e.movementY, "pointer");
       }
     };
-    const container = gl.domElement;
-    container.addEventListener("wheel", onWheel, { passive: true });
-    container.addEventListener("touchstart", onTouchStart, { passive: true });
-    container.addEventListener("touchmove", onTouchMove, { passive: true });
-    container.addEventListener("pointerdown", onPointerDown);
-    container.addEventListener("pointermove", onPointerMove);
+
+    window.addEventListener("wheel", onWheel, { passive: true });
+    window.addEventListener("touchstart", onTouchStart, { passive: true });
+    window.addEventListener("touchmove", onTouchMove, { passive: true });
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("pointermove", onPointerMove);
     return () => {
-      container.removeEventListener("wheel", onWheel);
-      container.removeEventListener("touchstart", onTouchStart);
-      container.removeEventListener("touchmove", onTouchMove);
-      container.removeEventListener("pointerdown", onPointerDown);
-      container.removeEventListener("pointermove", onPointerMove);
+      window.removeEventListener("wheel", onWheel);
+      window.removeEventListener("touchstart", onTouchStart);
+      window.removeEventListener("touchmove", onTouchMove);
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("pointermove", onPointerMove);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- update is stable and uses refs for scroll position tracking
-  }, [gl.domElement]);
+  }, []);
 
   return {
     scrollY,

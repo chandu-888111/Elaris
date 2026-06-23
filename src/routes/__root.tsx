@@ -16,6 +16,7 @@ import { useAudioStore } from "@/store/AudioStore";
 import { PageTransition } from "@/components/PageTransition";
 import GlobalCanvas from "@/components/GlobalCanvas";
 import LandingCanvas from "@/components/LandingCanvas";
+import { DebugHud } from "@/components/ui/DebugHud";
 
 import appCss from "../styles.css?url";
 
@@ -151,6 +152,7 @@ function RootComponent() {
       <AuthProvider>
         {isLanding ? <LandingCanvas /> : <GlobalCanvas />}
         <MagneticCursor />
+        <DebugHud />
         <PageTransition location={location.pathname} />
         <MotionConfig reducedMotion="user">
           <AnimatePresence mode="wait">

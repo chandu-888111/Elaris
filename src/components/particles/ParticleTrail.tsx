@@ -85,7 +85,9 @@ export function ParticleTrail() {
 
       // Apply matrix for this instance.
       matrix.makeTranslation(positions[idx], positions[idx + 1], positions[idx + 2]);
-      meshRef.current?.setMatrixAt(i, matrix);
+      if (meshRef.current) {
+        meshRef.current.setMatrixAt(i, matrix);
+      }
     }
     // Notify three.js that instance matrices have changed.
     if (meshRef.current) {

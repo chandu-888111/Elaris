@@ -2,8 +2,13 @@ import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Sphere, MeshTransmissionMaterial, Torus, Cylinder } from "@react-three/drei";
 import * as THREE from "three";
-import { useSceneStore } from "@/hooks/use-scene-store";
 import { useLandingMemoryStore } from "@/store/LandingMemoryStore";
+import React from "react";
+
+export interface FloatingAICoreProps {
+  intensity?: number;
+  glow?: boolean;
+}
 
 // Glowing outer rim shader for the AI Core
 const RimGlowShader = {
@@ -30,8 +35,7 @@ const RimGlowShader = {
   `,
 };
 
-export function FloatingAICore() {
-  const setSunRef = useSceneStore((s) => s.setSunRef);
+export const FloatingAICore = React.forwardRef<THREE.Mesh, FloatingAICoreProps>((props, ref) => {
   const { scrollProgress } = useLandingMemoryStore();
   const coreRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
@@ -44,13 +48,6 @@ export function FloatingAICore() {
 
   // Rare Dyson Sphere Event (15% chance to be active this session)
   const [isDysonSphere] = useState(() => Math.random() > 0.85);
-
-  useEffect(() => {
-    if (glowRef.current) {
-      setSunRef(glowRef.current);
-    }
-    return () => setSunRef(null);
-  }, [setSunRef]);
 
   useFrame((state) => {
     if (!coreRef.current || !glowRef.current) return;
@@ -203,7 +200,17 @@ export function FloatingAICore() {
       </Sphere>
 
       {/* Outer shader glowing aura mesh */}
-      <Sphere ref={glowRef} args={[1.05, 64, 64]}>
+      <Sphere
+        ref={(node) => {
+          glowRef.current = node as THREE.Mesh;
+          if (typeof ref === "function") {
+            ref(node as THREE.Mesh);
+          } else if (ref) {
+            ref.current = node as THREE.Mesh;
+          }
+        }}
+        args={[1.05, 64, 64]}
+      >
         <shaderMaterial
           ref={glowMaterialRef}
           vertexShader={RimGlowShader.vertexShader}
@@ -263,4 +270,4 @@ export function FloatingAICore() {
       )}
     </group>
   );
-}
+});

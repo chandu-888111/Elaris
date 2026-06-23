@@ -52,7 +52,7 @@ export function NarrativeJourney() {
         ref={bgRef}
         className="absolute inset-0 z-0 bg-cover bg-center"
         style={{
-          backgroundImage: "url('/assets/placeholders/deep-space.jpg')",
+          backgroundImage: "url('/blackhole.jpg')",
           backgroundSize: "cover",
           backgroundPosition: "50% 0%",
         }}

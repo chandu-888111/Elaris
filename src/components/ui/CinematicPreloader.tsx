@@ -2,14 +2,12 @@ import { useProgress } from "@react-three/drei";
 import { motion, AnimatePresence } from "framer-motion";
 import { useEffect, useState } from "react";
 import { useAudioStore } from "@/store/AudioStore";
-import { useSceneStore } from "@/hooks/use-scene-store";
 
 export function CinematicPreloader() {
   const { active, progress, errors, item, loaded, total } = useProgress();
   const [isReady, setIsReady] = useState(false);
   const [isDismissed, setIsDismissed] = useState(false);
   const { initAudio } = useAudioStore();
-  const setState = useSceneStore((s) => s.setState);
 
   useEffect(() => {
     if (progress === 100) {
@@ -24,10 +22,7 @@ export function CinematicPreloader() {
   const handleEnter = () => {
     initAudio();
     setIsDismissed(true);
-    // Let the fade out animation play before unmounting the scene protections
-    setTimeout(() => {
-      setState({ preloaderDismissed: true });
-    }, 1500);
+    // Local dismissal complete
   };
 
   return (

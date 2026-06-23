@@ -128,10 +128,8 @@ function ProceduralPlanet() {
 function HeroSpaceship() {
   const groupRef = useRef<THREE.Group>(null);
   const { pointer } = useThree(); // Normalized -1 to +1
-  const preloaderDismissed = useSceneStore((s) => s.preloaderDismissed);
-
   useFrame((state) => {
-    if (!groupRef.current || !preloaderDismissed) return;
+    if (!groupRef.current) return;
     const time = state.clock.elapsedTime;
 
     // Continuous slow sine-wave bobbing
@@ -212,10 +210,8 @@ function Starfield() {
     return temp;
   }, [count]);
 
-  const preloaderDismissed = useSceneStore((s) => s.preloaderDismissed);
-
   useFrame((state) => {
-    if (!meshRef.current || !preloaderDismissed) return;
+    if (!meshRef.current) return;
     const { pointer } = state;
 
     // Starfield parallax layer shifting

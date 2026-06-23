@@ -144,7 +144,8 @@ const cardVariants = {
 function Landing() {
   const { scrollYProgress } = useScroll();
   const setScene = useSceneStore((s) => s.setScene);
-  const setState = useSceneStore((s) => s.setState);
+  const setCoreScale = useSceneStore((s) => s.setCoreScale);
+  const setCameraPosition = useSceneStore((s) => s.setCameraPosition);
 
   useEffect(() => {
     setScene("landing");
@@ -171,15 +172,11 @@ function Landing() {
 
   useEffect(() => {
     const unsub = scrollYProgress.on("change", (latest) => {
-      setState({
-        coreScale: scaleVal.get(),
-        particlesIntensity: particlesVal.get(),
-        cameraPosition: [1.1 * (1 - latest), camY.get(), camZ.get()],
-        glowColor: colorVal.get(),
-      });
+      setCoreScale(scaleVal.get());
+      setCameraPosition([1.1 * (1 - latest), camY.get(), camZ.get()]);
     });
     return () => unsub();
-  }, [scrollYProgress, scaleVal, particlesVal, camY, camZ, colorVal, setState]);
+  }, [scrollYProgress, scaleVal, camY, camZ, setCoreScale, setCameraPosition]);
 
   return (
     <div className="relative min-h-screen overflow-hidden">

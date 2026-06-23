@@ -11,18 +11,10 @@ type CameraMode = "chase" | "side" | "orbit" | "flyby" | "pullback" | "dramatic"
 type ShipMode = "idle" | "cruise" | "boost" | "reverse";
 
 export interface SceneState {
-  // Preloader state (global)
-  preloaderDismissed: boolean;
-  setPreloaderDismissed: (value: boolean) => void;
   // New fields for global canvas
-  sunRef: THREE.Mesh | null;
-  setSunRef: (ref: THREE.Mesh | null) => void;
-  glowColor: string;
-  setGlowColor: (color: string) => void;
   currentScene: string;
   setCurrentScene: (scene: string) => void;
-  particlesIntensity: number;
-  setParticlesIntensity: (intensity: number) => void;
+
   // Core graphics
   graphicsMode: GraphicsMode;
   graphicsModeLocked: boolean;
@@ -63,19 +55,13 @@ export interface SceneState {
   // Camera mode
   cameraMode: CameraMode;
   cameraPosition: [number, number, number];
+  setCameraPosition: (pos: [number, number, number]) => void;
   // Setters (exposed for external modules)
   setGraphicsMode: (mode: GraphicsMode) => void;
   lockGraphicsMode: (locked: boolean) => void;
   setCameraMode: (mode: CameraMode) => void;
   setHudVisible: (visible: boolean) => void;
   setScene: (scene: string) => void;
-  /**
-   * TEMPORARY migration helper.
-   * Replace with dedicated setters before Phase 3.
-   */
-  setState: (partial: Partial<SceneState>) => void;
-  // setScene: (scene: string) => void;
-
   setReduceMotion: (value: boolean) => void;
   setPrefersReducedTransparency: (value: boolean) => void;
   setKeyboardNavigation: (value: boolean) => void;
@@ -117,18 +103,11 @@ export const useSceneStore = create<SceneState>()(
     timeOfUniverse: 0,
     hudVisible: import.meta.env.DEV ? true : false,
     // New setters for global UI flags
-    setPreloaderDismissed: (value: boolean) => set({ preloaderDismissed: value }),
     setHudVisible: (visible: boolean) => set({ hudVisible: visible }),
-    // TODO: Temporary migration helper – replace with specific setters later
-    setState: (partial) => set((state) => ({ ...state, ...partial })),
     // Shortcut for currentScene
     setScene: (scene: string) => set({ currentScene: scene }),
-    preloaderDismissed: false,
     // New defaults
-    sunRef: null,
-    glowColor: "#00e5ff",
     currentScene: "default",
-    particlesIntensity: 1,
     coreScale: 1,
     setCoreScale: (value: number) => set({ coreScale: value }),
     setGraphicsMode: (mode: GraphicsMode) => {
@@ -137,10 +116,8 @@ export const useSceneStore = create<SceneState>()(
     },
     lockGraphicsMode: (locked: boolean) => set({ graphicsModeLocked: locked }),
     setCameraMode: (mode: CameraMode) => set({ cameraMode: mode }),
-    setSunRef: (ref: THREE.Mesh | null) => set({ sunRef: ref }),
-    setGlowColor: (color: string) => set({ glowColor: color }),
+    setCameraPosition: (pos: [number, number, number]) => set({ cameraPosition: pos }),
     setCurrentScene: (scene: string) => set({ currentScene: scene }),
-    setParticlesIntensity: (intensity: number) => set({ particlesIntensity: intensity }),
     setReduceMotion: (value: boolean) => set({ reduceMotion: value }),
     setPrefersReducedTransparency: (value: boolean) => set({ prefersReducedTransparency: value }),
     setKeyboardNavigation: (value: boolean) => set({ keyboardNavigation: value }),

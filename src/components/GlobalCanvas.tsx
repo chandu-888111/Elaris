@@ -1,4 +1,4 @@
-import { Suspense, useMemo, useEffect } from "react";
+import { Suspense, useMemo, useEffect, useRef } from "react";
 import { Canvas } from "@react-three/fiber";
 import { Stars, View } from "@react-three/drei";
 import { EffectComposer, Bloom, Vignette, GodRays } from "@react-three/postprocessing";
@@ -19,10 +19,13 @@ import { useSceneStore } from "@/hooks/use-scene-store";
 import { PerformanceThrottler } from "./canvas/PerformanceThrottler";
 
 export default function GlobalCanvas() {
-  const sunRef = useSceneStore((s) => s.sunRef);
-  const glowColor = useSceneStore((s) => s.glowColor);
+  const sunRef = useRef<THREE.Mesh>(null);
+  const glowColor = "#03000a"; // Local constant
   const currentScene = useSceneStore((s) => s.currentScene);
-  const particlesIntensity = useSceneStore((s) => s.particlesIntensity);
+  const graphicsMode = useSceneStore((s) => s.graphicsMode);
+
+  // Derive particle intensity from graphics mode
+  const particlesIntensity = graphicsMode === "ultra" ? 1.5 : graphicsMode === "high" ? 1.0 : 0.5;
   const isLanding = currentScene === "landing" || currentScene === "default";
   const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
   const isLaptop =
@@ -44,7 +47,7 @@ export default function GlobalCanvas() {
         camera={{ position: [0, 0, 8], fov: 45 }}
         gl={{ antialias: false, powerPreference: "high-performance", alpha: false }}
       >
-        <fog attach="fog" args={[glowColor || "#03000a", 5, 40]} />
+        <fog attach="fog" args={[glowColor, 5, 40]} />
         <Suspense fallback={null}>
           {/* Lighting */}
           <ambientLight intensity={0.2} />
@@ -94,16 +97,16 @@ export default function GlobalCanvas() {
 
           {/* Hero Objects */}
           <AsteroidField count={Math.floor(100 * actualIntensity)} />
-          <FloatingAICore />
+          <FloatingAICore ref={sunRef} />
           {isLanding && <SpaceEvents />}
 
           <PerformanceThrottler />
 
           {/* Post Processing */}
           <EffectComposer multisampling={0}>
-            {sunRef ? (
+            {sunRef.current ? (
               <GodRays
-                sun={sunRef}
+                sun={sunRef.current}
                 samples={60}
                 density={0.96}
                 decay={0.9}
