@@ -1,10 +1,15 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll } from "framer-motion";
 import { lazy, Suspense, useRef, useState, useEffect } from "react";
 import { Logo } from "@/components/Logo";
 import { useSceneStore } from "@/hooks/use-scene-store";
 import { InfiniteMarquee } from "@/components/landing/InfiniteMarquee";
 import { playHover, playClick } from "@/lib/sounds";
+import { useScrollTimeline } from "@/hooks/use-scroll-timeline";
+import { useNarrativeMachine } from "@/hooks/use-narrative-machine";
+import { NarrativeOverlay } from "@/components/landing/NarrativeOverlay";
+import { ChapterProgressBar } from "@/components/landing/ChapterProgressBar";
+import { AudioToggle } from "@/components/landing/AudioToggle";
 import {
   Sparkles,
   Brain,
@@ -144,43 +149,22 @@ const cardVariants = {
 function Landing() {
   const { scrollYProgress } = useScroll();
   const setScene = useSceneStore((s) => s.setScene);
-  const setCoreScale = useSceneStore((s) => s.setCoreScale);
-  const setCameraPosition = useSceneStore((s) => s.setCameraPosition);
 
   useEffect(() => {
     setScene("landing");
   }, [setScene]);
 
-  // Dynamic 3D mapping mappings based on scroll progression
-  const scaleVal = useTransform(
-    scrollYProgress,
-    [0, 0.25, 0.5, 0.75, 1],
-    [1.25, 1.6, 0.95, 1.4, 1.15],
-  );
-  const particlesVal = useTransform(
-    scrollYProgress,
-    [0, 0.25, 0.5, 0.75, 1],
-    [1.0, 1.6, 0.5, 1.3, 0.7],
-  );
-  const camZ = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [4.0, 3.4, 5.0, 4.2, 4.0]);
-  const camY = useTransform(scrollYProgress, [0, 0.25, 0.5, 0.75, 1], [0.0, -0.4, 0.6, -0.2, 0.1]);
-  const colorVal = useTransform(
-    scrollYProgress,
-    [0, 0.35, 0.7, 1],
-    ["#c084fc", "#38bdf8", "#ec4899", "#818cf8"],
-  );
-
-  useEffect(() => {
-    const unsub = scrollYProgress.on("change", (latest) => {
-      setCoreScale(scaleVal.get());
-      setCameraPosition([1.1 * (1 - latest), camY.get(), camZ.get()]);
-    });
-    return () => unsub();
-  }, [scrollYProgress, scaleVal, camY, camZ, setCoreScale, setCameraPosition]);
+  // Wire scroll timeline and narrative state machine
+  useScrollTimeline(scrollYProgress);
+  useNarrativeMachine(scrollYProgress);
 
   return (
     <div className="relative min-h-screen overflow-hidden">
       <div className="absolute inset-0 grid-bg opacity-40 [mask-image:radial-gradient(ellipse_at_center,black,transparent_70%)]" />
+
+      {/* Narrative & scroll indicators */}
+      <NarrativeOverlay />
+      <ChapterProgressBar />
       {/* Nav */}
       <header className="relative z-10 mx-auto flex max-w-7xl items-center justify-between px-6 py-5">
         <Logo />
@@ -195,7 +179,8 @@ function Landing() {
             FAQ
           </a>
         </nav>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-3">
+          <AudioToggle />
           <Link
             to="/login"
             onMouseEnter={playHover}

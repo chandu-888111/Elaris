@@ -150,7 +150,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
-        {isLanding ? <LandingCanvas /> : <GlobalCanvas />}
+        <GlobalCanvas />
         <MagneticCursor />
         <DebugHud />
         <PageTransition location={location.pathname} />

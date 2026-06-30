@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect, useState } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import { Sphere, MeshTransmissionMaterial, Torus, Cylinder } from "@react-three/drei";
 import * as THREE from "three";
-import { useLandingMemoryStore } from "@/store/LandingMemoryStore";
+import { useSceneStore } from "@/hooks/use-scene-store";
 import React from "react";
 
 export interface FloatingAICoreProps {
@@ -36,7 +36,7 @@ const RimGlowShader = {
 };
 
 export const FloatingAICore = React.forwardRef<THREE.Mesh, FloatingAICoreProps>((props, ref) => {
-  const { scrollProgress } = useLandingMemoryStore();
+  const scrollProgress = useSceneStore((s) => s.scrollProgress);
   const coreRef = useRef<THREE.Mesh>(null);
   const glowRef = useRef<THREE.Mesh>(null);
   const glowMaterialRef = useRef<THREE.ShaderMaterial>(null);

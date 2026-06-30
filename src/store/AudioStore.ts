@@ -178,3 +178,8 @@ export const useAudioStore = create<AudioState>((set, get) => ({
     droneOscillator.frequency.setTargetAtTime(newFreq, audioContext.currentTime, 0.5);
   },
 }));
+
+if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).__useAudioStore = useAudioStore;
+}
