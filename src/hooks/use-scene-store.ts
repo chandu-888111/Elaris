@@ -163,3 +163,8 @@ export const useHudState = () =>
     scrollProgress: s.scrollProgress,
     // Additional metrics can be added as needed
   }));
+
+if (typeof window !== "undefined") {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  (window as any).__useSceneStore = useSceneStore;
+}

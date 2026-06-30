@@ -17,6 +17,7 @@ import { startEventScheduler } from "@/lib/DynamicEventScheduler";
 import { useSceneStore } from "@/hooks/use-scene-store";
 
 import { PerformanceThrottler } from "./canvas/PerformanceThrottler";
+import { SceneDirector } from "./canvas/SceneDirector";
 
 export default function GlobalCanvas() {
   const sunRef = useRef<THREE.Mesh>(null);
@@ -47,7 +48,7 @@ export default function GlobalCanvas() {
         camera={{ position: [0, 0, 8], fov: 45 }}
         gl={{ antialias: false, powerPreference: "high-performance", alpha: false }}
       >
-        <fog attach="fog" args={[glowColor, 5, 40]} />
+        <fog attach="fog" args={[glowColor, 20, 120]} />
         <Suspense fallback={null}>
           {/* Lighting */}
           <ambientLight intensity={0.2} />
@@ -56,6 +57,7 @@ export default function GlobalCanvas() {
           <pointLight position={[0, -2, -6]} intensity={1.5} color="#ec4899" />
 
           <SpaceTravelCamera />
+          <SceneDirector />
 
           {/* Environment */}
           <Stars

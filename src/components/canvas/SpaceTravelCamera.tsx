@@ -15,6 +15,7 @@ export function SpaceTravelCamera() {
   const cameraMode = useSceneStore((s) => s.cameraMode);
   const graphicsMode = useSceneStore((s) => s.graphicsMode);
   const scrollProgress = useSceneStore((s) => s.scrollProgress);
+  const cameraPosition = useSceneStore((s) => s.cameraPosition);
 
   const currentPos = useRef(new THREE.Vector3());
   const currentLook = useRef(new THREE.Vector3());
@@ -81,17 +82,26 @@ export function SpaceTravelCamera() {
         }
       }
       lerpSpeed = 0.15;
+    } else if (cameraMode === "dramatic") {
+      // Slow pullback and subtle roll (Dutch tilt) for the invitation/closing chapter
+      targetPos.set(0.5, 0.5, 12);
+      targetLook.set(0, 0, 0);
+      camera.up.set(0.1, 0.99, 0).normalize();
+      lerpSpeed = 0.02;
     } else {
-      // Fallback: basic scroll‑based camera (previous implementation simplified).
-      const chapter = Math.floor(scrollProgress * 7);
-      const baseZ = 8 - chapter * 2;
-      targetPos.set(0, 0, baseZ);
+      // centralize scroll‑driven timeline position from the store (chase mode / default)
+      targetPos.set(cameraPosition[0], cameraPosition[1], cameraPosition[2]);
       targetLook.set(0, 0, 0);
       // subtle pointer parallax
       const { pointer } = state;
       targetPos.x += pointer.x * 0.5;
       targetPos.y += pointer.y * 0.5;
-      lerpSpeed = 0.02;
+      lerpSpeed = 0.05;
+    }
+
+    // Reset camera roll if not in dramatic mode
+    if (cameraMode !== "dramatic") {
+      camera.up.set(0, 1, 0);
     }
 
     // Apply smoothing lerps
